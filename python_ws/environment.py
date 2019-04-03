@@ -1,6 +1,7 @@
 from bisect import bisect_left
 import math
 import random
+import numpy as np
 
 # This class is only for representing start and goal points
 class Point(object):
@@ -14,6 +15,9 @@ class State(object):
 		self.dh = distance_human
 		self.tg = theta_goal
 		self.dg = distance_goal
+
+	def print_state(self):
+		print ('State(th:%f, dh:%f, tg:%f, dg:%f)' % (self.th, self.dh, self.tg, self.dg))
 
 # mean degree is represented with radians
 class Action(object):
@@ -163,3 +167,22 @@ class Environment(object):
 							s = self.states[th][dh][tg][dg]
 
 							print 'states[%d][%d][%d][%d] is: State(th:%f, dh:%f, tg:%f, dg:%f)' % (th, dh, tg, dg, s.th, s.dh, s.tg, s.dg)
+
+	# Creates a linear array with states enumerated 
+	# enumeration is like: 00001 - 00002 - 00003 .... 0010 - 0011 - 0011 -...
+	def save_states(self, file_name):
+		linear_states = []
+		for th in range(len(self.states)):
+			for dh in range(len(self.states[th])):
+				for tg in range(len(self.states[th][dh])):
+					for dg in range(len(self.states[th][dh][tg])):
+						linear_states.append(self.states[th][dh][tg][dg])
+		linear_states = np.array(linear_states)
+		np.save(file_name, linear_states)
+
+	def load_states(self, file_name):
+		with open(file_name, 'r') as f:
+			f.seek(0)
+			states = np.load(f)
+
+		return states
