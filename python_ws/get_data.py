@@ -4,6 +4,7 @@ import math
 from environment import Environment
 from environment import Point
 from environment import Action
+from environment import State
 
 # README::
 # This program gets .bag file name and topic name as argument:
@@ -77,7 +78,13 @@ def main():
 	env.initialize_states()
 	#env.print_states()
 
-	env.transaction(env.random_state(), Action((-1 + 1/14.0) * math.pi))
+	#env.transaction(env.random_state(), Action((-1 + 1/14.0) * math.pi))
+	#env.transaction(State(0, 16.0, 0, 16.0), Action((-1 + 1/14.0) * math.pi))
+
+	env.save_states('./states.npy')
+	states = env.load_states('./states.npy')
+	for state in states:
+		state.print_state()
 
 main()
 
