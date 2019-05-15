@@ -82,7 +82,9 @@ class IRLAgent:
         self.q = np.empty((len(self.env.states), len(self.env.actions)))
         self.esvc = np.empty(len(self.env.states))
         self.esvc_mat = np.empty((len(self.env.states), self.vi_loop))
-        self.emp_fc = self.calculate_emp_fc()
+
+        self.emp_fc = 0
+        self.calculate_emp_fc()
 
     ###############################################
     # [1]
@@ -134,7 +136,7 @@ class IRLAgent:
         self.emp_fc = 0
 
     def exp_fc(self):   # expected feature counts
-        self.
+        return np.matmul(self.esvc.T * self.env.states)
 
     def policy(self, sid, aid):
         return np.exp(self.q[sid][aid] - self.v[sid])
