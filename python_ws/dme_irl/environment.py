@@ -150,14 +150,14 @@ class Environment(object):
 			self.dh_arr.insert(0, human_current_distance)
 
 	def calculate_max_distance(self):
-		return ((self.start_point.x - self.goal_point.x) ** 2 + \
-						(self.start_point.y - self.goal_point.y) ** 2 ) ** (1.0/2.0)
+		return ((self.start_point.x - self.goal_point.x) ** 2 +
+				(self.start_point.y - self.goal_point.y) ** 2) ** (1.0/2.0)
 
 	def print_fields(self):
-		print ("th_arr: ", self.th_arr)
-		print ("dh_arr: ", self.dh_arr)
-		print ("tg_arr: ", self.tg_arr)
-		print ("dg_arr: ", self.dg_arr)
+		print("th_arr: ", self.th_arr)
+		print("dh_arr: ", self.dh_arr)
+		print("tg_arr: ", self.tg_arr)
+		print("dg_arr: ", self.dg_arr)
 
 	def print_states(self):
 		for th in range(len(self.states)):
@@ -166,7 +166,7 @@ class Environment(object):
 						for dg in range(len(self.states[th][dh][tg])):
 							s = self.states[th][dh][tg][dg]
 
-							print 'states[%d][%d][%d][%d] is: State(th:%f, dh:%f, tg:%f, dg:%f)' % (th, dh, tg, dg, s.th, s.dh, s.tg, s.dg)
+							print('states[%d][%d][%d][%d] is: State(th:%f, dh:%f, tg:%f, dg:%f)' % (th, dh, tg, dg, s.th, s.dh, s.tg, s.dg))
 
 	# Creates a linear array with states enumerated 
 	# enumeration is like: 00001 - 00002 - 00003 .... 0010 - 0011 - 0011 -...

@@ -11,9 +11,11 @@ from agent import IRLAgent
 class DME:
     def __init__(self):
         self.irl_agent = IRLAgent()
-        self.iter_count = 100
+        self.iter_count = 10000
 
-    def dme(self):
+        self.losses = np.empty_like(self.iter_count)
+
+    def run(self):
         for i in range(self.iter_count):
             # calculate state rewards
             reward_vect = np.vectorize(self.irl_agent.reward)
@@ -27,8 +29,13 @@ class DME:
             loss = self.irl_agent.emp_fc - self.irl_agent.exp_fc()
             self.irl_agent.rew_nn.backprop_diff(loss)
 
+            print(loss)
+            self.losses[i] = loss
 
 
+if __name__ == "__main__":
+    dme = DME()
+    dme.run()
 
 
 
