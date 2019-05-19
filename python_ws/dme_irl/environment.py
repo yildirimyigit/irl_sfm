@@ -2,6 +2,8 @@ from bisect import bisect_left
 import math
 import random
 import numpy as np
+from numpy.core.multiarray import dtype
+
 from utils import *
 
 
@@ -29,8 +31,7 @@ class Environment(object):
         # states[th][dh][tg][dg] = s --> th, dh ..etc represents indexes of theta_human, distance_human.. etc
         self.states = [[[[]]]]
         self.actions = []
-
-        self.initialize_actions()
+        self.linear_states = np.array([])
 
     # actions array should start from -90 to +90 degrees thus if divided by 5:
     # | -72 | -36 | 0 | 36 | 72 | -> 1-(1/10) + i*1/5
@@ -46,7 +47,7 @@ class Environment(object):
 
     # This method returns a new state for a given action, according to this in
     # initialize_states() states array is initialized for each dimension
-    def transaction(self, state, action):
+    def transition(self, state, action):
         dhx = state.dh * math.cos(state.th)
         dhy = state.dh * math.sin(state.th)
         dgx = state.dg * math.cos(state.tg)
@@ -73,9 +74,9 @@ class Environment(object):
         tgn_index = self.closest_index(tgn, self.tg_arr)
         dgn_index = self.closest_index(dgn, self.dg_arr)
 
-        s = self.states[thn_index][dhn_index][tgn_index][dgn_index]
-        print('New state belongs to states[%d][%d][%d][%d] which has State(th:%f, dh:%f, tg:%f, dg:%f)'
-              % (thn_index, dhn_index, tgn_index, dgn_index, s.th, s.dh, s.tg, s.dg))
+        # s = self.states[thn_index][dhn_index][tgn_index][dgn_index]
+        # print('New state belongs to states[%d][%d][%d][%d] which has State(th:%f, dh:%f, tg:%f, dg:%f)'
+        #       % (thn_index, dhn_index, tgn_index, dgn_index, s.th, s.dh, s.tg, s.dg))
 
         return thn_index, dhn_index, tgn_index, dgn_index
 
@@ -151,14 +152,33 @@ class Environment(object):
     # Creates a linear array with states enumerated
     # enumeration is like: 00001 - 00002 - 00003 .... 0010 - 0011 - 0011 -...
     def save_states(self, file_name):
+        print('+ Environment.save_states()')
         linear_states = []
         for th in range(len(self.states)):
             for dh in range(len(self.states[th])):
                 for tg in range(len(self.states[th][dh])):
                     for dg in range(len(self.states[th][dh][tg])):
                         linear_states.append(self.states[th][dh][tg][dg])
-        linear_states = np.array(linear_states)
-        np.save(file_name, linear_states)
+        self.linear_states = np.array(linear_states)
+        np.save(file_name, self.linear_states)
+
+    # save actions next to the states
+    def save_actions(self, file_name):
+        print('+ Environment.save_actions()')
+        np.save(file_name, np.asarray(self.actions))
+
+    def save_transitions(self, file_name):
+        print('+ Environment.save_transitions()')
+        nof_states = len(self.linear_states)
+        transition_mat = np.zeros([nof_states, len(self.actions), nof_states], dtype=float)  # T[s][a][s']
+        print(np.shape(transition_mat))
+
+        for i in range(nof_states):
+            for j in range(len(self.actions)):
+                s_prime = self.take_step(i, j)
+                transition_mat[i, j, s_prime] = 1   # Set T(s, a, s') to 1, leave other dest 0
+
+        np.save(file_name, transition_mat)
 
     def load_states(self, file_name):
         with open(file_name, 'r') as f:
@@ -166,3 +186,31 @@ class Environment(object):
             states = np.load(f)
 
         return states
+
+    def initialize_environment(self):
+        print('+ Environment.initialize_environment')
+        self.initialize_states()
+        self.initialize_actions()
+
+    def take_step(self, sid, aid):
+        state = self.linear_states[sid]
+        action = self.actions[aid]
+        (thn, dhn, tgn, dgn) = self.transition(state, action)
+        return self.get_state_index(thn, dhn, tgn, dgn)
+
+    def get_state_index(self, thn, dhn, tgn, dgn):
+        thn_index = self.closest_index(thn, self.th_arr)
+        dhn_index = self.closest_index(dhn, self.dh_arr)
+        tgn_index = self.closest_index(tgn, self.tg_arr)
+        dgn_index = self.closest_index(dgn, self.dg_arr)
+
+        dhlen = len(self.dh_arr)
+        tglen = len(self.tg_arr)
+        dglen = len(self.dg_arr)
+
+        tgeff = dglen
+        dheff = tgeff * tglen
+        theff = dhlen * dheff
+
+        state_index = theff*thn_index + dheff*dhn_index + tgeff*tgn_index + dgn_index
+        return state_index
