@@ -170,15 +170,16 @@ class Environment(object):
     def save_transitions(self, file_name):
         print('+ Environment.save_transitions()')
         nof_states = len(self.linear_states)
-        transition_mat = np.zeros([nof_states, len(self.actions), nof_states], dtype=float)  # T[s][a][s']
-        print(np.shape(transition_mat))
-
-        for i in range(nof_states):
-            for j in range(len(self.actions)):
-                s_prime = self.take_step(i, j)
-                transition_mat[i, j, s_prime] = 1   # Set T(s, a, s') to 1, leave other dest 0
-
-        np.save(file_name, transition_mat)
+        print(nof_states)
+        # transition_mat = np.zeros([nof_states, len(self.actions), nof_states], dtype=float)  # T[s][a][s']
+        # print(np.shape(transition_mat))
+        #
+        # for i in range(nof_states):
+        #     for j in range(len(self.actions)):
+        #         s_prime = self.take_step(i, j)
+        #         transition_mat[i, j, s_prime] = 1   # Set T(s, a, s') to 1, leave other dest 0
+        #
+        # np.save(file_name, transition_mat)
 
     def load_states(self, file_name):
         with open(file_name, 'r') as f:
@@ -188,7 +189,7 @@ class Environment(object):
         return states
 
     def initialize_environment(self):
-        print('+ Environment.initialize_environment')
+        print('+ Environment.initialize_environment()')
         self.initialize_states()
         self.initialize_actions()
 
