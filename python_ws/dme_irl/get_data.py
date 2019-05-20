@@ -75,7 +75,7 @@ def main():
 	# calculate_distances()
 	# print ('############ DISTANCES ############\n', distances[0:10])
 
-	env = Environment(1, 3, 9, 9, Point(18.0, 10.0), Point(2.0, 10.0))
+	env = Environment(1, 3, 3, 3, Point(18.0, 10.0), Point(2.0, 10.0))
 	env.initialize_fields()
 	env.print_fields()
 
