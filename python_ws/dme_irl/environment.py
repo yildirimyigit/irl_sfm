@@ -2,12 +2,12 @@ from bisect import bisect_left
 import math
 import random
 import numpy as np
-from numpy.core.multiarray import dtype
 
 from utils import *
 
 min_goal_dist = 0.1
 min_human_dist = 0.15
+
 
 # This class initializes actions and states arrays and also has the transaction function
 class Environment(object):
@@ -36,7 +36,7 @@ class Environment(object):
         self.actions = []
         self.linear_states = np.array([])
 
-        self.initialize_actions()
+        # self.initialize_actions()
 
     # actions array should start from -90 to +90 degrees thus if divided by 5:
     # | -72 | -36 | 0 | 36 | 72 | -> 1-(1/10) + i*1/5
@@ -45,6 +45,25 @@ class Environment(object):
         for i in range(self.action_div):
             # it is multiplied with pi in order to give it in radians format
             self.action_list.append(Action((-1 + change / 2.0 + i * change) * math.pi))
+
+    def initialize_states2(self):
+        human_change = 1.0 / self.theta_human_div
+        goal_change = 1.0 / self.theta_goal_div
+
+        # discretizing the distances in logarithmic scale
+        current_goal_distance = min_goal_dist
+        max_human_dist = max_goal_distance = self.calculate_max_distance()
+
+        while current_goal_distance < max_goal_distance:
+            for i in range(self.theta_human_div):
+                th_change = (human_change / 2.0 + i * human_change) * math.pi
+                current_human_dist = min_human_dist
+                while current_human_dist < max_human_dist:
+                    for j in range(self.theta_goal_div):
+                        tg_change = (goal_change / 2.0 + j * goal_change) * math.pi
+                        self.state_list.append(State(current_goal_distance, tg_change, current_human_dist, th_change))
+                    current_human_dist *= 2
+            current_goal_distance *= 2
 
     # TODO: Change to reflect the new data structure
     def random_state(self):
@@ -125,16 +144,18 @@ class Environment(object):
         goal_current_distance = self.calculate_max_distance()
         self.dg_arr.append(goal_current_distance)
         while goal_current_distance > 0 and (not goal_current_distance < 0.05):
-            change = goal_current_distance / 10.0
+            change = goal_current_distance / 2
             goal_current_distance = goal_current_distance - change
             self.dg_arr.insert(0, goal_current_distance)
 
         human_current_distance = self.calculate_max_distance()
         self.dh_arr.append(human_current_distance)
         while human_current_distance > 0 and (not human_current_distance < 0.05):
-            change = human_current_distance / 10.0
+            change = human_current_distance / 2
             human_current_distance = human_current_distance - change
             self.dh_arr.insert(0, human_current_distance)
+
+        print(str(len(self.dg_arr))+'\n'+str(len(self.tg_arr))+'\n'+str(len(self.dh_arr))+'\n'+str(len(self.th_arr)))
 
     def calculate_max_distance(self):
         return ((self.start_point.x - self.goal_point.x) ** 2 +
@@ -221,22 +242,3 @@ class Environment(object):
 
         state_index = theff*thn_index + dheff*dhn_index + tgeff*tgn_index + dgn_index
         return state_index
-
-    def initialize_states2(self):
-        human_change = 1.0 / self.theta_human_div
-        goal_change = 1.0 / self.theta_goal_div
-
-        # discretizing the distances in logarithmic scale
-        current_goal_distance = min_goal_dist
-        max_human_dist = max_goal_distance = self.calculate_max_distance()
-
-        while current_goal_distance < max_goal_distance:
-            for i in range(self.theta_human_div):
-                th_change = (human_change / 2.0 + i * human_change) * math.pi
-                current_human_dist = min_human_dist
-                while current_human_dist < max_human_dist:
-                    for j in range(self.theta_goal_div):
-                        tg_change = (goal_change / 2.0 + j * goal_change) * math.pi
-                        self.state_list.append(State(current_goal_distance, tg_change, current_human_dist, th_change))
-                    current_human_dist *= 2
-            current_goal_distance *= 2
