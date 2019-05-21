@@ -6,6 +6,8 @@ from numpy.core.multiarray import dtype
 
 from utils import *
 
+min_goal_dist = 0.1
+min_human_dist = 0.15
 
 # This class initializes actions and states arrays and also has the transaction function
 class Environment(object):
@@ -13,8 +15,7 @@ class Environment(object):
     # action_div : # of intervals to divide 180 degrees for actions
     # theta_human_div : # of intervals to divide 180 degrees for theta_human
     # theta_goal_div : # of intervals to divide 180 degrees for theta_goal
-    def __init__(self, delta_distance, action_div, theta_human_div, theta_goal_div,
-                 start_point, goal_point):
+    def __init__(self, delta_distance, action_div, theta_human_div, theta_goal_div, start_point, goal_point):
         self.delta_distance = delta_distance
         self.action_div = action_div
         self.theta_human_div = theta_human_div
@@ -22,6 +23,8 @@ class Environment(object):
         self.start_point = start_point
         self.goal_point = goal_point
 
+        self.state_list = []    # Will replace linear_states, th_arr, dg_arr... and states
+        self.action_list = []
         self.th_arr = []
         self.dh_arr = []
         self.tg_arr = []
@@ -33,20 +36,24 @@ class Environment(object):
         self.actions = []
         self.linear_states = np.array([])
 
+        self.initialize_actions()
+
     # actions array should start from -90 to +90 degrees thus if divided by 5:
     # | -72 | -36 | 0 | 36 | 72 | -> 1-(1/10) + i*1/5
     def initialize_actions(self):
         change = 1.0 / self.action_div  # the beginning should be in the middle
         for i in range(self.action_div):
             # it is multiplied with pi in order to give it in radians format
-            self.actions.append(Action((-1 + change / 2.0 + i * change) * math.pi))
+            self.action_list.append(Action((-1 + change / 2.0 + i * change) * math.pi))
 
+    # TODO: Change to reflect the new data structure
     def random_state(self):
         return State(random.choice(self.th_arr), random.choice(self.dh_arr),
                      random.choice(self.tg_arr), random.choice(self.dg_arr), )
 
     # This method returns a new state for a given action, according to this in
     # initialize_states() states array is initialized for each dimension
+    # TODO: Change to make it return the state
     def transition(self, state, action):
         dhx = state.dh * math.cos(state.th)
         dhy = state.dh * math.sin(state.th)
@@ -185,7 +192,6 @@ class Environment(object):
         with open(file_name, 'r') as f:
             f.seek(0)
             states = np.load(f)
-
         return states
 
     def initialize_environment(self):
@@ -215,3 +221,22 @@ class Environment(object):
 
         state_index = theff*thn_index + dheff*dhn_index + tgeff*tgn_index + dgn_index
         return state_index
+
+    def initialize_states2(self):
+        human_change = 1.0 / self.theta_human_div
+        goal_change = 1.0 / self.theta_goal_div
+
+        # discretizing the distances in logarithmic scale
+        current_goal_distance = min_goal_dist
+        max_human_dist = max_goal_distance = self.calculate_max_distance()
+
+        while current_goal_distance < max_goal_distance:
+            for i in range(self.theta_human_div):
+                th_change = (human_change / 2.0 + i * human_change) * math.pi
+                current_human_dist = min_human_dist
+                while current_human_dist < max_human_dist:
+                    for j in range(self.theta_goal_div):
+                        tg_change = (goal_change / 2.0 + j * goal_change) * math.pi
+                        self.state_list.append(State(current_goal_distance, tg_change, current_human_dist, th_change))
+                    current_human_dist *= 2
+            current_goal_distance *= 2

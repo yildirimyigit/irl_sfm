@@ -6,7 +6,7 @@ class Point(object):
 
 
 class State(object):
-    def __init__(self, theta_human=0, distance_human=0, theta_goal=0, distance_goal=0):
+    def __init__(self, distance_goal=0, theta_goal=0, distance_human=0, theta_human=0):
         self.th = theta_human
         self.dh = distance_human
         self.tg = theta_goal
