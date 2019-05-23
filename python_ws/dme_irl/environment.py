@@ -85,16 +85,63 @@ class Environment(object):
         print('Old state was: State(th:%f, dh:%f, tg:%f, dg:%f)' % (state.th, state.dh, state.tg, state.dg))
         print('New state is: State(th:%f, dh:%f, tg:%f, dg:%f)' % (thn, dhn, tgn, dgn))
 
-        thn_index = self.closest_index(thn, self.th_arr)
-        dhn_index = self.closest_index(dhn, self.dh_arr)
-        tgn_index = self.closest_index(tgn, self.tg_arr)
-        dgn_index = self.closest_index(dgn, self.dg_arr)
+        return self.find_closest_state(State(dgn, tgn, dhn, thn))
 
-        # s = self.states[thn_index][dhn_index][tgn_index][dgn_index]
-        # print('New state belongs to states[%d][%d][%d][%d] which has State(th:%f, dh:%f, tg:%f, dg:%f)'
-        #       % (thn_index, dhn_index, tgn_index, dgn_index, s.th, s.dh, s.tg, s.dg))
+    def find_closest_state(self, state):
+        dg_ind = tg_ind = dh_ind = th_ind = -1
+        dg_found = tg_found = dh_found = th_found = False
+        for i in range(len(self.state_list)):
+            if th_ind == -1 and state.th <= self.state_list[i].th:
+                if i == 0:
+                    th_ind = 0
+                else:
+                    th_ind = i if np.abs(state.th - self.state_list[i].th) < \
+                                  np.abs(state.th - self.state_list[i-1].th) else (i-1)  # discretizing to the closest
+                th_found = True
+            if dh_ind == -1 and state.dh <= self.state_list[i].dh:
+                if i == 0:
+                    dh_ind = 0
+                else:
+                    dh_ind = i if np.abs(state.dh - self.state_list[i].dh) < \
+                                  np.abs(state.dh - self.state_list[i-1].dh) else (i-1)
+                    dh_found = True
+            if tg_ind == -1 and state.tg <= self.state_list[i].tg:
+                if i == 0:
+                    tg_ind = 0
+                else:
+                    tg_ind = i if np.abs(state.tg - self.state_list[i].tg) < \
+                                  np.abs(state.tg - self.state_list[i-1].tg) else (i-1)
+                tg_found = True
+            if dg_ind == -1 and state.dg <= self.state_list[i].dg:
+                if i == 0:
+                    dg_ind = 0
+                else:
+                    dg_ind = i if np.abs(state.dg - self.state_list[i].dg) < \
+                                  np.abs(state.dg - self.state_list[i-1].dg) else (i-1)
+                dg_found = True
 
-        return thn_index, dhn_index, tgn_index, dgn_index
+            if dg_found and tg_found and dh_found and th_found:
+                break
+
+        # if not found, field is discretized into the last cell
+        if not dg_found:
+            dg_ind = len(self.state_list)-1
+        if not tg_found:
+            tg_ind = len(self.state_list)-1
+        if not dh_found:
+            dh_ind = len(self.state_list)-1
+        if not th_found:
+            th_ind = len(self.state_list)-1
+
+        s = State(distance_goal=self.state_list[dg_ind].dg, theta_goal=self.state_list[tg_ind].tg,
+                  distance_human=self.state_list[dh_ind].dh, theta_human=self.state_list[th_ind].th)
+        for i in range(len(self.state_list)):
+            if s.is_equal(self.state_list[i]):
+                return s
+
+        print('Error: ', end='')
+        print_state(s)
+        raise ValueError('Environment.find_closest_state failed to find the matching state')
 
     # This returns the closest index for the check_element at the check_array
     # bisect_left uses binary search
@@ -130,12 +177,11 @@ class Environment(object):
         print('+ Environment.save_transitions()')
         nof_states = len(self.state_list)
         transition_mat = np.zeros([nof_states, len(self.action_list), nof_states], dtype=float)  # T[s][a][s']
-        print(np.shape(transition_mat))
 
         for i in range(nof_states):
             for j in range(len(self.action_list)):
-                s_prime = self.transition(self.state_list[i], self.action_list[j])
-                transition_mat[i, j, s_prime] = 1   # Set T(s, a, s') to 1, leave other dest 0
+                self.transition(self.state_list[i], self.action_list[j])
+                transition_mat[i, j, :] = self.transition(self.state_list[i], self.action_list[j])
 
         np.save(file_name, transition_mat)
 

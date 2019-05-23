@@ -12,6 +12,9 @@ class State(object):
         self.tg = theta_goal
         self.dg = distance_goal
 
+    def is_equal(self, state):
+        return state.th == self.th and state.dh == self.dh and state.tg == self.tg and state.dg == self.dg
+
 
 # mean degree is represented with radians
 class Action(object):
