@@ -253,4 +253,4 @@ class Environment(object):
 
 
 def print_state(s):
-        print('dg: %f, tg: %f, dh: %f, th: %f', s.dg, s.tg, s.dh, s.th)
+        print('dg: {0}, tg: {1}, dh: {2}, th: {3}'.format(s.dg, s.tg, s.dh, s.th))
