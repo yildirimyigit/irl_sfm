@@ -36,7 +36,7 @@ class Environment(object):
             self.action_list.append(Action((-1 + change / 2.0 + i * change) * math.pi))
 
     def initialize_states(self):
-        print('+ Environment.initialize_states2()')
+        print('+ Environment.initialize_states()')
         human_change = 1.0 / self.theta_human_div
         goal_change = 1.0 / self.theta_goal_div
 
@@ -63,6 +63,7 @@ class Environment(object):
     # This method returns the probability distribution on the state space which corresponds to the probabilities of
     # the agent's being on each state when it takes the given action in given state.
     def transition(self, state, action):
+        print('+ Environment.transition')
         dhx = state.dh * math.cos(state.th)
         dhy = state.dh * math.sin(state.th)
         dgx = state.dg * math.cos(state.tg)
@@ -81,8 +82,8 @@ class Environment(object):
             thn = math.pi + thn  # when the degree between people are negative
         dhn = (dhxn ** 2 + dhyn ** 2) ** (1.0 / 2.0)
 
-        print('Old state was: State(th:%f, dh:%f, tg:%f, dg:%f)' % (state.th, state.dh, state.tg, state.dg))
-        print('New state is: State(th:%f, dh:%f, tg:%f, dg:%f)' % (thn, dhn, tgn, dgn))
+        print('Old state was: State(dg:%f, tg:%f, dh:%f, th:%f)' % (state.dg, state.tg, state.dh, state.th))
+        print('New state is: State(dg:%f, tg:%f, dh:%f, th:%f)' % (dgn, tgn, dhn, thn))
 
         state_prob_dist = np.zeros(len(self.state_list))
 
@@ -91,6 +92,7 @@ class Environment(object):
         return state_prob_dist
 
     def find_closest_state(self, state):
+        print('+ Environment.find_closest_state')
         dg_ind = tg_ind = dh_ind = th_ind = -1
         dg_found = tg_found = dh_found = th_found = False
         for i in range(len(self.state_list)):
@@ -136,13 +138,17 @@ class Environment(object):
         if not th_found:
             th_ind = len(self.state_list)-1
 
-        s = State(distance_goal=self.state_list[dg_ind].dg, theta_goal=self.state_list[tg_ind].tg,
-                  distance_human=self.state_list[dh_ind].dh, theta_human=self.state_list[th_ind].th)
+        s = State(distance_goal=self.state_list[int(dg_ind)].dg, theta_goal=self.state_list[int(tg_ind)].tg,
+                  distance_human=self.state_list[int(dh_ind)].dh, theta_human=self.state_list[int(th_ind)].th)
+
+        print("Closest State:")
+        print_state(s)
+
         for i in range(len(self.state_list)):
             if s.is_equal(self.state_list[i]):
-                return s
+                return i
 
-        print('Error: ', end='')
+        print('Error: ')
         print_state(s)
         raise ValueError('Environment.find_closest_state failed to find the matching state')
 
@@ -179,14 +185,20 @@ class Environment(object):
     def save_transitions(self, file_name):
         print('+ Environment.save_transitions()')
         nof_states = len(self.state_list)
-        transition_mat = np.zeros([nof_states, len(self.action_list), nof_states], dtype=float)  # T[s][a][s']
+        # transition_mat = np.zeros([nof_states, len(self.action_list), nof_states], dtype=float)  # T[s][a][s']
 
-        for i in range(nof_states):
-            for j in range(len(self.action_list)):
-                self.transition(self.state_list[i], self.action_list[j])
-                transition_mat[i, j, :] = self.transition(self.state_list[i], self.action_list[j])
+        s = a = 0
+        print('****************state-action-transition***************')
+        print_state(self.state_list[s])
+        print_action(self.action_list[a])
+        print(self.transition(self.state_list[s], self.action_list[a]))
 
-        np.save(file_name, transition_mat)
+        # for i in range(nof_states):
+        #     for j in range(len(self.action_list)):
+        #         self.transition(self.state_list[i], self.action_list[j])
+        #         transition_mat[i, j, :] = self.transition(self.state_list[i], self.action_list[j])
+        #
+        # np.save(file_name, transition_mat)
 
     def initialize_environment(self):
         print('+ Environment.initialize_environment()')
@@ -196,3 +208,7 @@ class Environment(object):
 
 def print_state(s):
         print('dg: {0}, tg: {1}, dh: {2}, th: {3}'.format(s.dg, s.tg, s.dh, s.th))
+
+
+def print_action(a):
+    print('mid_deg: {0}'.format(a.middle_degree))
