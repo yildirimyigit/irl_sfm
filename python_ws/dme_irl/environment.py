@@ -60,9 +60,8 @@ class Environment(object):
     def random_state(self):
         return np.random.choice(self.state_list)
 
-    # This method returns a new state for a given action, according to this in
-    # initialize_states() states array is initialized for each dimension
-    # TODO: Change to make it return the state
+    # This method returns the probability distribution on the state space which corresponds to the probabilities of
+    # the agent's being on each state when it takes the given action in given state.
     def transition(self, state, action):
         dhx = state.dh * math.cos(state.th)
         dhy = state.dh * math.sin(state.th)
@@ -85,7 +84,11 @@ class Environment(object):
         print('Old state was: State(th:%f, dh:%f, tg:%f, dg:%f)' % (state.th, state.dh, state.tg, state.dg))
         print('New state is: State(th:%f, dh:%f, tg:%f, dg:%f)' % (thn, dhn, tgn, dgn))
 
-        return self.find_closest_state(State(dgn, tgn, dhn, thn))
+        state_prob_dist = np.zeros(len(self.state_list))
+
+        # This part is specific to the deterministic environments
+        state_prob_dist[self.find_closest_state(State(dgn, tgn, dhn, thn))] = 1
+        return state_prob_dist
 
     def find_closest_state(self, state):
         dg_ind = tg_ind = dh_ind = th_ind = -1
