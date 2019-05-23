@@ -41,12 +41,14 @@ class Environment(object):
     # actions array should start from -90 to +90 degrees thus if divided by 5:
     # | -72 | -36 | 0 | 36 | 72 | -> 1-(1/10) + i*1/5
     def initialize_actions(self):
+        print('+ Environment.initialize_actions()')
         change = 1.0 / self.action_div  # the beginning should be in the middle
         for i in range(self.action_div):
             # it is multiplied with pi in order to give it in radians format
             self.action_list.append(Action((-1 + change / 2.0 + i * change) * math.pi))
 
     def initialize_states2(self):
+        print('+ Environment.initialize_states2()')
         human_change = 1.0 / self.theta_human_div
         goal_change = 1.0 / self.theta_goal_div
 
@@ -64,6 +66,8 @@ class Environment(object):
                         self.state_list.append(State(current_goal_distance, tg_change, current_human_dist, th_change))
                     current_human_dist *= 2
             current_goal_distance *= 2
+        for s in self.state_list:
+            print_state(s)
 
     # TODO: Change to reflect the new data structure
     def random_state(self):
@@ -198,7 +202,6 @@ class Environment(object):
     def save_transitions(self, file_name):
         print('+ Environment.save_transitions()')
         nof_states = len(self.linear_states)
-        print(nof_states)
         # transition_mat = np.zeros([nof_states, len(self.actions), nof_states], dtype=float)  # T[s][a][s']
         # print(np.shape(transition_mat))
         #
@@ -218,6 +221,11 @@ class Environment(object):
     def initialize_environment(self):
         print('+ Environment.initialize_environment()')
         self.initialize_states()
+        self.initialize_actions()
+
+    def initialize_environment2(self):
+        print('+ Environment.initialize_environment()')
+        self.initialize_states2()
         self.initialize_actions()
 
     def take_step(self, sid, aid):
@@ -242,3 +250,7 @@ class Environment(object):
 
         state_index = theff*thn_index + dheff*dhn_index + tgeff*tgn_index + dgn_index
         return state_index
+
+
+def print_state(s):
+        print('dg: %f, tg: %f, dh: %f, th: %f', s.dg, s.tg, s.dh, s.th)
