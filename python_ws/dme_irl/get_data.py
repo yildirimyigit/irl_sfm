@@ -72,24 +72,12 @@ def main():
 	bag = rosbag.Bag(sys.argv[1])
 	initialize_positions(bag)
 
-	# calculate_distances()
-	# print ('############ DISTANCES ############\n', distances[0:10])
-
 	env = Environment(1, 3, 9, 9, Point(18.0, 10.0), Point(2.0, 10.0))
-	# env.initialize_fields()
-	# env.print_fields()
+	env.initialize_environment()
 
-	env.initialize_environment2()
-	# env.print_states()
-	# env.transaction(env.random_state(), Action((-1 + 1/14.0) * math.pi))
-	# env.transaction(State(0, 16.0, 0, 16.0), Action((-1 + 1/14.0) * math.pi))
-
-	# env.save_states('../data/states.npy')
-	# env.save_actions('../data/actions.npy')
-	# env.save_transitions('../data/transitions.npy')
-	# states = env.load_states('./states.npy')
-	# for state in states:
-	# 	state.print_state()
+	env.save_states('../data/states.npy')
+	env.save_actions('../data/actions.npy')
+	env.save_transitions('../data/transitions.npy')
 
 
 main()

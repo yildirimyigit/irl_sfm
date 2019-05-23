@@ -23,20 +23,8 @@ class Environment(object):
         self.start_point = start_point
         self.goal_point = goal_point
 
-        self.state_list = []    # Will replace linear_states, th_arr, dg_arr... and states
-        self.action_list = []
-        self.th_arr = []
-        self.dh_arr = []
-        self.tg_arr = []
-        self.dg_arr = []
-
-        # This array will have states in each four dimensioned
-        # states[th][dh][tg][dg] = s --> th, dh ..etc represents indexes of theta_human, distance_human.. etc
-        self.states = [[[[]]]]
-        self.actions = []
-        self.linear_states = np.array([])
-
-        # self.initialize_actions()
+        self.state_list = []    # list of State objects
+        self.action_list = []   # list of Action objects
 
     # actions array should start from -90 to +90 degrees thus if divided by 5:
     # | -72 | -36 | 0 | 36 | 72 | -> 1-(1/10) + i*1/5
@@ -47,7 +35,7 @@ class Environment(object):
             # it is multiplied with pi in order to give it in radians format
             self.action_list.append(Action((-1 + change / 2.0 + i * change) * math.pi))
 
-    def initialize_states2(self):
+    def initialize_states(self):
         print('+ Environment.initialize_states2()')
         human_change = 1.0 / self.theta_human_div
         goal_change = 1.0 / self.theta_goal_div
@@ -69,10 +57,8 @@ class Environment(object):
         for s in self.state_list:
             print_state(s)
 
-    # TODO: Change to reflect the new data structure
     def random_state(self):
-        return State(random.choice(self.th_arr), random.choice(self.dh_arr),
-                     random.choice(self.tg_arr), random.choice(self.dg_arr), )
+        return np.random.choice(self.state_list)
 
     # This method returns a new state for a given action, according to this in
     # initialize_states() states array is initialized for each dimension
@@ -125,131 +111,38 @@ class Environment(object):
         else:
             return pos - 1
 
-    def initialize_states(self):
-        for th in range(len(self.th_arr)):
-            for dh in range(len(self.dh_arr)):
-                for tg in range(len(self.tg_arr)):
-                    for dg in range(len(self.dg_arr)):
-                        self.states[th][dh][tg].append(
-                            State(self.th_arr[th], self.dh_arr[dh], self.tg_arr[tg], self.dg_arr[dg]))
-                    self.states[th][dh].append([])
-                self.states[th].append([[]])
-            self.states.append([[[]]])
-
-    def initialize_fields(self):
-        human_change = 1.0 / self.theta_human_div
-        for i in range(self.theta_human_div):
-            self.th_arr.append((human_change / 2.0 + i * human_change) * math.pi)
-
-        goal_change = 1.0 / self.theta_goal_div
-        for i in range(self.theta_goal_div):
-            self.tg_arr.append((goal_change / 2.0 + i * goal_change) * math.pi)
-
-        goal_current_distance = self.calculate_max_distance()
-        self.dg_arr.append(goal_current_distance)
-        while goal_current_distance > 0 and (not goal_current_distance < 0.05):
-            change = goal_current_distance / 2
-            goal_current_distance = goal_current_distance - change
-            self.dg_arr.insert(0, goal_current_distance)
-
-        human_current_distance = self.calculate_max_distance()
-        self.dh_arr.append(human_current_distance)
-        while human_current_distance > 0 and (not human_current_distance < 0.05):
-            change = human_current_distance / 2
-            human_current_distance = human_current_distance - change
-            self.dh_arr.insert(0, human_current_distance)
-
-        print(str(len(self.dg_arr))+'\n'+str(len(self.tg_arr))+'\n'+str(len(self.dh_arr))+'\n'+str(len(self.th_arr)))
-
     def calculate_max_distance(self):
         return ((self.start_point.x - self.goal_point.x) ** 2 +
                 (self.start_point.y - self.goal_point.y) ** 2) ** (1.0 / 2.0)
-
-    def print_fields(self):
-        print("th_arr: ", self.th_arr)
-        print("dh_arr: ", self.dh_arr)
-        print("tg_arr: ", self.tg_arr)
-        print("dg_arr: ", self.dg_arr)
-
-    def print_states(self):
-        for th in range(len(self.states)):
-            for dh in range(len(self.states[th])):
-                for tg in range(len(self.states[th][dh])):
-                    for dg in range(len(self.states[th][dh][tg])):
-                        s = self.states[th][dh][tg][dg]
-
-                        print('states[%d][%d][%d][%d] is: State(th:%f, dh:%f, tg:%f, dg:%f)' % (
-                            th, dh, tg, dg, s.th, s.dh, s.tg, s.dg))
 
     # Creates a linear array with states enumerated
     # enumeration is like: 00001 - 00002 - 00003 .... 0010 - 0011 - 0011 -...
     def save_states(self, file_name):
         print('+ Environment.save_states()')
-        linear_states = []
-        for th in range(len(self.states)):
-            for dh in range(len(self.states[th])):
-                for tg in range(len(self.states[th][dh])):
-                    for dg in range(len(self.states[th][dh][tg])):
-                        linear_states.append(self.states[th][dh][tg][dg])
-        self.linear_states = np.array(linear_states)
-        np.save(file_name, self.linear_states)
+        np.save(file_name, np.asarray(self.state_list))
 
     # save actions next to the states
     def save_actions(self, file_name):
         print('+ Environment.save_actions()')
-        np.save(file_name, np.asarray(self.actions))
+        np.save(file_name, np.asarray(self.action_list))
 
     def save_transitions(self, file_name):
         print('+ Environment.save_transitions()')
-        nof_states = len(self.linear_states)
-        # transition_mat = np.zeros([nof_states, len(self.actions), nof_states], dtype=float)  # T[s][a][s']
-        # print(np.shape(transition_mat))
-        #
-        # for i in range(nof_states):
-        #     for j in range(len(self.actions)):
-        #         s_prime = self.take_step(i, j)
-        #         transition_mat[i, j, s_prime] = 1   # Set T(s, a, s') to 1, leave other dest 0
-        #
-        # np.save(file_name, transition_mat)
+        nof_states = len(self.state_list)
+        transition_mat = np.zeros([nof_states, len(self.action_list), nof_states], dtype=float)  # T[s][a][s']
+        print(np.shape(transition_mat))
 
-    def load_states(self, file_name):
-        with open(file_name, 'r') as f:
-            f.seek(0)
-            states = np.load(f)
-        return states
+        for i in range(nof_states):
+            for j in range(len(self.action_list)):
+                s_prime = self.transition(self.state_list[i], self.action_list[j])
+                transition_mat[i, j, s_prime] = 1   # Set T(s, a, s') to 1, leave other dest 0
+
+        np.save(file_name, transition_mat)
 
     def initialize_environment(self):
         print('+ Environment.initialize_environment()')
         self.initialize_states()
         self.initialize_actions()
-
-    def initialize_environment2(self):
-        print('+ Environment.initialize_environment()')
-        self.initialize_states2()
-        self.initialize_actions()
-
-    def take_step(self, sid, aid):
-        state = self.linear_states[sid]
-        action = self.actions[aid]
-        (thn, dhn, tgn, dgn) = self.transition(state, action)
-        return self.get_state_index(thn, dhn, tgn, dgn)
-
-    def get_state_index(self, thn, dhn, tgn, dgn):
-        thn_index = self.closest_index(thn, self.th_arr)
-        dhn_index = self.closest_index(dhn, self.dh_arr)
-        tgn_index = self.closest_index(tgn, self.tg_arr)
-        dgn_index = self.closest_index(dgn, self.dg_arr)
-
-        dhlen = len(self.dh_arr)
-        tglen = len(self.tg_arr)
-        dglen = len(self.dg_arr)
-
-        tgeff = dglen
-        dheff = tgeff * tglen
-        theff = dhlen * dheff
-
-        state_index = theff*thn_index + dheff*dhn_index + tgeff*tgn_index + dgn_index
-        return state_index
 
 
 def print_state(s):
