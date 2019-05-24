@@ -82,8 +82,8 @@ class Environment(object):
             thn = math.pi + thn  # when the degree between people are negative
         dhn = (dhxn ** 2 + dhyn ** 2) ** (1.0 / 2.0)
 
-        print('Old state was: State(dg:%f, tg:%f, dh:%f, th:%f)' % (state.dg, state.tg, state.dh, state.th))
-        print('New state is: State(dg:%f, tg:%f, dh:%f, th:%f)' % (dgn, tgn, dhn, thn))
+        # print('Old state was: State(dg:%f, tg:%f, dh:%f, th:%f)' % (state.dg, state.tg, state.dh, state.th))
+        # print('New state is: State(dg:%f, tg:%f, dh:%f, th:%f)' % (dgn, tgn, dhn, thn))
 
         state_prob_dist = np.zeros(len(self.state_list))
 
@@ -185,20 +185,25 @@ class Environment(object):
     def save_transitions(self, file_name):
         print('+ Environment.save_transitions()')
         nof_states = len(self.state_list)
-        # transition_mat = np.zeros([nof_states, len(self.action_list), nof_states], dtype=float)  # T[s][a][s']
+        transition_mat = np.zeros([nof_states, len(self.action_list), nof_states], dtype=float)  # T[s][a][s']
 
-        s = a = 0
-        print('****************state-action-transition***************')
-        print_state(self.state_list[s])
-        print_action(self.action_list[a])
-        print(self.transition(self.state_list[s], self.action_list[a]))
+        # s = a = 0
+        # print('****************state-action-transition***************')
+        # print_state(self.state_list[s])
+        # print_action(self.action_list[a])
+        # test = self.transition(self.state_list[s], self.action_list[a])
+        # for i in range(len(test)):
+        #     if test[i] > 0:
+        #         print(i, ": ", test[i])
+        for i in range(nof_states):
+            for j in range(len(self.action_list)):
+                transition_mat[i, j, :] = self.transition(self.state_list[i], self.action_list[j])
 
-        # for i in range(nof_states):
-        #     for j in range(len(self.action_list)):
-        #         self.transition(self.state_list[i], self.action_list[j])
-        #         transition_mat[i, j, :] = self.transition(self.state_list[i], self.action_list[j])
-        #
-        # np.save(file_name, transition_mat)
+        np.save(file_name, transition_mat)
+
+        for i in range(len(self.state_list)):
+            if transition_mat[0, 0, i] > 0:
+                print(i, ": ", transition_mat[0, 0, i])
 
     def initialize_environment(self):
         print('+ Environment.initialize_environment()')
