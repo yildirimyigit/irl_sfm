@@ -187,23 +187,20 @@ class Environment(object):
         nof_states = len(self.state_list)
         transition_mat = np.zeros([nof_states, len(self.action_list), nof_states], dtype=float)  # T[s][a][s']
 
-        # s = a = 0
-        # print('****************state-action-transition***************')
-        # print_state(self.state_list[s])
-        # print_action(self.action_list[a])
-        # test = self.transition(self.state_list[s], self.action_list[a])
-        # for i in range(len(test)):
-        #     if test[i] > 0:
-        #         print(i, ": ", test[i])
-        for i in range(nof_states):
-            for j in range(len(self.action_list)):
-                transition_mat[i, j, :] = self.transition(self.state_list[i], self.action_list[j])
-
-        np.save(file_name, transition_mat)
-
-        for i in range(len(self.state_list)):
-            if transition_mat[0, 0, i] > 0:
-                print(i, ": ", transition_mat[0, 0, i])
+        s = a = 0
+        print('****************state-action-transition***************')
+        print_state(self.state_list[s])
+        print_action(self.action_list[a])
+        test = self.transition(self.state_list[s], self.action_list[a])
+        for i in range(len(test)):
+            if test[i] > 0:
+                print(i, ": ", test[i])
+        
+        # for i in range(nof_states):
+        #     for j in range(len(self.action_list)):
+        #         transition_mat[i, j, :] = self.transition(self.state_list[i], self.action_list[j])
+        #
+        # np.save(file_name, transition_mat)
 
     def initialize_environment(self):
         print('+ Environment.initialize_environment()')
