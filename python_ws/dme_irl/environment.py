@@ -15,6 +15,7 @@ class Environment(object):
     # action_div : # of intervals to divide 180 degrees for actions
     # theta_human_div : # of intervals to divide 180 degrees for theta_human
     # theta_goal_div : # of intervals to divide 180 degrees for theta_goal
+    # theta_goal and theta_human are vertical. Meaning: 0th 
     def __init__(self, delta_distance, action_div, theta_human_div, theta_goal_div, start_point, goal_point):
         self.delta_distance = delta_distance
         self.action_div = action_div
@@ -27,14 +28,16 @@ class Environment(object):
         self.action_list = []   # list of Action objects
 
     # actions array should start from -90 to +90 degrees thus if divided by 5:
-    # | -72 | -36 | 0 | 36 | 72 | -> 1-(1/10) + i*1/5
+    # | -72 | -36 | 0 | 36 | 72 | -> 1/2-(1/10) + i*1/5
     def initialize_actions(self):
         print('+ Environment.initialize_actions()')
         change = 1.0 / self.action_div  # the beginning should be in the middle
         for i in range(self.action_div):
             # it is multiplied with pi in order to give it in radians format
-            self.action_list.append(Action((-1 + change / 2.0 + i * change) * math.pi))
+            self.action_list.append(Action((-1/2.0 + change / 2.0 + i * change) * math.pi))
 
+    # thetas are also initialized the same way with the actions.
+    # only, they are divided in the range(0,360) degrees instead of (0,180)
     def initialize_states(self):
         print('+ Environment.initialize_states()')
         human_change = 1.0 / self.theta_human_div
@@ -46,11 +49,11 @@ class Environment(object):
 
         while current_goal_distance < max_goal_distance:
             for i in range(self.theta_human_div):
-                th_change = (human_change / 2.0 + i * human_change) * math.pi
+                th_change = (-1/2.0 + human_change/2.0 + i * human_change) * 2*math.pi
                 current_human_dist = min_human_dist
                 while current_human_dist < max_human_dist:
                     for j in range(self.theta_goal_div):
-                        tg_change = (goal_change / 2.0 + j * goal_change) * math.pi
+                        tg_change = (-1/2.0 + goal_change/2.0 + j * goal_change) * 2*math.pi
                         self.state_list.append(State(current_goal_distance, tg_change, current_human_dist, th_change))
                     current_human_dist *= 2
             current_goal_distance *= 2
@@ -62,6 +65,10 @@ class Environment(object):
 
     # This method returns the probability distribution on the state space which corresponds to the probabilities of
     # the agent's being on each state when it takes the given action in given state.
+    # The angel 0 represents the front of the agent, and x-y axises are set according to angels. Thus in this
+    # case x represents vertical axis, and y represents horizontal axis. And sin&cos values are calculated
+    # accordingly
+    # left:-y, up:+x, right:+y, down:-x (according to the agent)
     def transition(self, state, action):
         print('+ Environment.transition')
         dhx = state.dh * math.cos(state.th)
@@ -69,18 +76,64 @@ class Environment(object):
         dgx = state.dg * math.cos(state.tg)
         dgy = state.dg * math.sin(state.tg)
 
-        # dgyn stands for new distance goal (y), the same for the rest of the variables as well
-        dgxn = dgx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
-        dgyn = dgy - self.delta_distance / 2.0 * math.sin(action.middle_degree)
-        tgn = math.atan(dgyn / dgxn)
+        print(dgx, dgy, dhx, dhy)
+
+        # dgyn stands for new distance goal (y), the same for the rest of the vmiddle_degreeariables as well
+        if abs(math.cos(action.middle_degree) - math.cos(state.tg)) > 1.0:
+            # it means that x dimensions of the action vector and distance_human vector is not the same
+            if dgx < 0:
+                dgxn = dgx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
+            else:
+                dgxn = dgx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
+        else: # then they are on the same side. then a step towards that side decreases the distance
+            if dgx < 0:
+                dgxn = dgx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
+            else:
+                dgxn = dgx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
+
+        if abs(math.sin(action.middle_degree) - math.sin(state.tg)) > 1.0:
+            # they are not on the same side with y axis
+            dgyn = dgy - self.delta_distance / 2.0 * math.sin(action.middle_degree)
+        else: # then they are on the same side. then a step towards that side decreases the distance
+            dgyn = dgy + self.delta_distance / 2.0 * math.sin(action.middle_degree)
+
+        if abs(dgxn) > math.pi:
+            dgxn = -dgxn
+        if abs(dgyn) > math.pi:
+            dgyn = -dgyn
+
+        tgn = math.atan2(-dgyn, dgxn)
         dgn = (dgxn ** 2 + dgyn ** 2) ** (1.0 / 2.0)
 
-        dhxn = dhx - self.delta_distance * math.cos(action.middle_degree)
-        dhyn = dhy - self.delta_distance * math.sin(action.middle_degree)
-        thn = math.atan(dhyn / dhxn)
-        if thn < 0:
-            thn = math.pi + thn  # when the degree between people are negative
+
+        if abs(math.cos(action.middle_degree) - math.cos(state.th)) > 1.0:
+            # it means that x dimensions of the action vector and distance_human vector is not the same
+            if dhx < 0:
+                dhxn = dhx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
+            else:
+                dhxn = dhx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
+        else: # then they are on the same side. then a step towards that side decreases the distance
+            if dhx < 0:
+                dhxn = dhx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
+            else:
+                dhxn = dhx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
+
+        if abs(math.sin(action.middle_degree) - math.sin(state.th)) > 1.0:
+            # they are not on the same side with y axis
+            dhyn = dhy - self.delta_distance / 2.0 * math.sin(action.middle_degree)
+        else: # then they are on the same side. then a step towards that side decreases the distance
+            dhyn = dhy + self.delta_distance / 2.0 * math.sin(action.middle_degree)
+                
+        if abs(dhxn) > math.pi:
+            dhxn = -dhxn
+        if abs(dhyn) > math.pi:
+            dhyn = -dhyn
+
+        thn = math.atan2(-dhyn, dhxn)
         dhn = (dhxn ** 2 + dhyn ** 2) ** (1.0 / 2.0)
+
+        print(dgxn, dgyn, dhxn, dhyn)
+        print('dgn:', dgn, ' tgn:', tgn, ' dhn:', dhn, 'thn: ', thn)
 
         # print('Old state was: State(dg:%f, tg:%f, dh:%f, th:%f)' % (state.dg, state.tg, state.dh, state.th))
         # print('New state is: State(dg:%f, tg:%f, dh:%f, th:%f)' % (dgn, tgn, dhn, thn))
@@ -141,8 +194,8 @@ class Environment(object):
         s = State(distance_goal=self.state_list[int(dg_ind)].dg, theta_goal=self.state_list[int(tg_ind)].tg,
                   distance_human=self.state_list[int(dh_ind)].dh, theta_human=self.state_list[int(th_ind)].th)
 
-        print("Closest State:")
-        print_state(s)
+        #print("Closest State:")
+        #print_state(s)
 
         for i in range(len(self.state_list)):
             if s.is_equal(self.state_list[i]):
@@ -195,6 +248,19 @@ class Environment(object):
         for i in range(len(test)):
             if test[i] > 0:
                 print(i, ": ", test[i])
+
+        for i in range(10):
+            s = int(random.random()*len(self.state_list))
+            a = int(random.random()*len(self.action_list))
+            print('current state:')
+            print_state(self.state_list[s])
+            print('current action:')
+            self.action_list[a].print_action()
+            test = self.transition(self.state_list[s], self.action_list[a])
+            for j in range(len(test)):
+                if test[j] > 0:
+                    print('new state is:')
+                    print_state(self.state_list[j])
         
         # for i in range(nof_states):
         #     for j in range(len(self.action_list)):
