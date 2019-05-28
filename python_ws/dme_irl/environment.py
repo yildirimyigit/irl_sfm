@@ -105,7 +105,6 @@ class Environment(object):
         tgn = math.atan2(-dgyn, dgxn)
         dgn = (dgxn ** 2 + dgyn ** 2) ** (1.0 / 2.0)
 
-
         if abs(math.cos(action.middle_degree) - math.cos(state.th)) > 1.0:
             # it means that x dimensions of the action vector and distance_human vector is not the same
             if dhx < 0:
@@ -194,8 +193,8 @@ class Environment(object):
         s = State(distance_goal=self.state_list[int(dg_ind)].dg, theta_goal=self.state_list[int(tg_ind)].tg,
                   distance_human=self.state_list[int(dh_ind)].dh, theta_human=self.state_list[int(th_ind)].th)
 
-        #print("Closest State:")
-        #print_state(s)
+        # print("Closest State:")
+        # print_state(s)
 
         for i in range(len(self.state_list)):
             if s.is_equal(self.state_list[i]):
@@ -255,7 +254,7 @@ class Environment(object):
             print('current state:')
             print_state(self.state_list[s])
             print('current action:')
-            self.action_list[a].print_action()
+            print_action(self.action_list[a])
             test = self.transition(self.state_list[s], self.action_list[a])
             for j in range(len(test)):
                 if test[j] > 0:
