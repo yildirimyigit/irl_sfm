@@ -102,3 +102,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Yigit added
+# numpy data files
+data/
+.npy
