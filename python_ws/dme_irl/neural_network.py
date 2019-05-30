@@ -7,7 +7,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
+# from mpl_toolkits import mplot3d
 
 
 def sum_error(y, y_hat):
@@ -102,8 +102,8 @@ class MyNN:
 
         layer = x
         for i in range(self.nof_layers - 1):
-            b = np.ones((len(layer), 1))
-            layer = np.append(layer, b, axis=1)  # augmenting biases to each instance in the batch
+            b = np.ones(layer.ndim)
+            layer = np.append(layer, b)  # TODO: no batch right now, OLD:augmenting biases to each instance in the batch
             layer = np.dot(layer, self.weights[i])
 
             self.layer_inputs.append(layer)
