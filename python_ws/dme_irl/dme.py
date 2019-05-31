@@ -36,15 +36,3 @@ class DME:
 if __name__ == "__main__":
     dme = DME()
     dme.run()
-
-
-
-
-
-
-
-
-
-
-
-

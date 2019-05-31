@@ -70,13 +70,12 @@ class Environment(object):
     # accordingly
     # left:-y, up:+x, right:+y, down:-x (according to the agent)
     def transition(self, state, action):
-        print('+ Environment.transition')
         dhx = state.dh * math.cos(state.th)
         dhy = state.dh * math.sin(state.th)
         dgx = state.dg * math.cos(state.tg)
         dgy = state.dg * math.sin(state.tg)
 
-        print(dgx, dgy, dhx, dhy)
+        # print(dgx, dgy, dhx, dhy)
 
         # dgyn stands for new distance goal (y), the same for the rest of the vmiddle_degreeariables as well
         if abs(math.cos(action.middle_degree) - math.cos(state.tg)) > 1.0:
@@ -85,7 +84,7 @@ class Environment(object):
                 dgxn = dgx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
             else:
                 dgxn = dgx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
-        else: # then they are on the same side. then a step towards that side decreases the distance
+        else:   # then they are on the same side. then a step towards that side decreases the distance
             if dgx < 0:
                 dgxn = dgx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
             else:
@@ -94,7 +93,7 @@ class Environment(object):
         if abs(math.sin(action.middle_degree) - math.sin(state.tg)) > 1.0:
             # they are not on the same side with y axis
             dgyn = dgy - self.delta_distance / 2.0 * math.sin(action.middle_degree)
-        else: # then they are on the same side. then a step towards that side decreases the distance
+        else:   # then they are on the same side. then a step towards that side decreases the distance
             dgyn = dgy + self.delta_distance / 2.0 * math.sin(action.middle_degree)
 
         if abs(dgxn) > math.pi:
@@ -111,7 +110,7 @@ class Environment(object):
                 dhxn = dhx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
             else:
                 dhxn = dhx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
-        else: # then they are on the same side. then a step towards that side decreases the distance
+        else:   # then they are on the same side. then a step towards that side decreases the distance
             if dhx < 0:
                 dhxn = dhx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
             else:
@@ -120,7 +119,7 @@ class Environment(object):
         if abs(math.sin(action.middle_degree) - math.sin(state.th)) > 1.0:
             # they are not on the same side with y axis
             dhyn = dhy - self.delta_distance / 2.0 * math.sin(action.middle_degree)
-        else: # then they are on the same side. then a step towards that side decreases the distance
+        else:   # then they are on the same side. then a step towards that side decreases the distance
             dhyn = dhy + self.delta_distance / 2.0 * math.sin(action.middle_degree)
                 
         if abs(dhxn) > math.pi:
@@ -131,11 +130,8 @@ class Environment(object):
         thn = math.atan2(-dhyn, dhxn)
         dhn = (dhxn ** 2 + dhyn ** 2) ** (1.0 / 2.0)
 
-        print(dgxn, dgyn, dhxn, dhyn)
-        print('dgn:', dgn, ' tgn:', tgn, ' dhn:', dhn, 'thn: ', thn)
-
-        # print('Old state was: State(dg:%f, tg:%f, dh:%f, th:%f)' % (state.dg, state.tg, state.dh, state.th))
-        # print('New state is: State(dg:%f, tg:%f, dh:%f, th:%f)' % (dgn, tgn, dhn, thn))
+        # print(dgxn, dgyn, dhxn, dhyn)
+        # print('dgn:', dgn, ' tgn:', tgn, ' dhn:', dhn, 'thn: ', thn)
 
         state_prob_dist = np.zeros(len(self.state_list))
 
@@ -144,7 +140,6 @@ class Environment(object):
         return state_prob_dist
 
     def find_closest_state(self, state):
-        print('+ Environment.find_closest_state')
         dg_ind = tg_ind = dh_ind = th_ind = -1
         dg_found = tg_found = dh_found = th_found = False
         for i in range(len(self.state_list)):
@@ -193,9 +188,6 @@ class Environment(object):
         s = State(distance_goal=self.state_list[int(dg_ind)].dg, theta_goal=self.state_list[int(tg_ind)].tg,
                   distance_human=self.state_list[int(dh_ind)].dh, theta_human=self.state_list[int(th_ind)].th)
 
-        # print("Closest State:")
-        # print_state(s)
-
         for i in range(len(self.state_list)):
             if s.is_equal(self.state_list[i]):
                 return i
@@ -239,33 +231,36 @@ class Environment(object):
         nof_states = len(self.state_list)
         transition_mat = np.zeros([nof_states, len(self.action_list), nof_states], dtype=float)  # T[s][a][s']
 
-        s = a = 0
-        print('****************state-action-transition***************')
-        print_state(self.state_list[s])
-        print_action(self.action_list[a])
-        test = self.transition(self.state_list[s], self.action_list[a])
-        for i in range(len(test)):
-            if test[i] > 0:
-                print(i, ": ", test[i])
-
-        for i in range(10):
-            s = int(random.random()*len(self.state_list))
-            a = int(random.random()*len(self.action_list))
-            print('current state:')
-            print_state(self.state_list[s])
-            print('current action:')
-            print_action(self.action_list[a])
-            test = self.transition(self.state_list[s], self.action_list[a])
-            for j in range(len(test)):
-                if test[j] > 0:
-                    print('new state is:')
-                    print_state(self.state_list[j])
-        
-        # for i in range(nof_states):
-        #     for j in range(len(self.action_list)):
-        #         transition_mat[i, j, :] = self.transition(self.state_list[i], self.action_list[j])
+        # Testing ################################################################
+        # s = a = 0
+        # print('****************state-action-transition***************')
+        # print_state(self.state_list[s])
+        # print_action(self.action_list[a])
+        # test = self.transition(self.state_list[s], self.action_list[a])
+        # for i in range(len(test)):
+        #     if test[i] > 0:
+        #         print(i, ": ", test[i])
         #
-        # np.save(file_name, transition_mat)
+        # for i in range(10):
+        #     s = int(random.random()*len(self.state_list))
+        #     a = int(random.random()*len(self.action_list))
+        #     print('current state:')
+        #     print_state(self.state_list[s])
+        #     print('current action:')
+        #     print_action(self.action_list[a])
+        #     test = self.transition(self.state_list[s], self.action_list[a])
+        #     for j in range(len(test)):
+        #         if test[j] > 0:
+        #             print('new state is:')
+        #             print_state(self.state_list[j])
+        # Testing ################################################################
+
+        for i in range(nof_states):
+            for j in range(len(self.action_list)):
+                transition_mat[i, j, :] = self.transition(self.state_list[i], self.action_list[j])
+
+        np.save(file_name, transition_mat)
+        print('- Environment.save_transitions()')
 
     def initialize_environment(self):
         print('+ Environment.initialize_environment()')

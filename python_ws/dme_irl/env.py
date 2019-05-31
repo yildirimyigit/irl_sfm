@@ -10,21 +10,22 @@ from environment import *
 class MDP:
     def __init__(self, path='../../data/'):
         self.path = path
-        self.states, self.actions = self.create_env()
-        self.th_arr, self.dh_arr, self.tg_arr, self.dg_arr = self.get_discritized_env_arrays()
+        self.states, self.actions, self.transition = self.create_env()
+        # self.th_arr, self.dh_arr, self.tg_arr, self.dg_arr = self.get_discritized_env_arrays()
         self.delta_distance = 0.2
         self.gamma = 0.9
         # TODO: start and goal states
         self.start_id = self.get_start_state()
-        self.goal_id = 0
+        self.goal_id = 972
 
     # returns previously generated states and actions
     def create_env(self):
-        return np.load(self.path + 'states.npy'), np.load(self.path + 'actions.npy')
+        return np.load(self.path + 'states.npy'), np.load(self.path + 'actions.npy'), \
+               np.load(self.path + 'transitions.npy')
 
-    def get_discritized_env_arrays(self):
-        return np.load(self.path + 'th.npy'), np.load(self.path + 'dh.npy'), \
-               np.load(self.path + 'tg.npy'), np.load(self.path + 'dg.npy')
+    # def get_discritized_env_arrays(self):
+    #     return np.load(self.path + 'th.npy'), np.load(self.path + 'dh.npy'), \
+    #            np.load(self.path + 'tg.npy'), np.load(self.path + 'dg.npy')
 
     # This method returns a new state for a given action, according to this in
     # initialize_states() states array is initialized for each dimension
@@ -60,24 +61,26 @@ class MDP:
         return self.states[new_sid]
 
     def get_state_index(self, thn, dhn, tgn, dgn):
-        thn_index = closest_index(thn, self.th_arr)
-        dhn_index = closest_index(dhn, self.dh_arr)
-        tgn_index = closest_index(tgn, self.tg_arr)
-        dgn_index = closest_index(dgn, self.dg_arr)
+        # thn_index = closest_index(thn, self.th_arr)
+        # dhn_index = closest_index(dhn, self.dh_arr)
+        # tgn_index = closest_index(tgn, self.tg_arr)
+        # dgn_index = closest_index(dgn, self.dg_arr)
+        #
+        # dhlen = len(self.dh_arr)
+        # tglen = len(self.tg_arr)
+        # dglen = len(self.dg_arr)
 
-        dhlen = len(self.dh_arr)
-        tglen = len(self.tg_arr)
-        dglen = len(self.dg_arr)
+        # tgeff = dglen
+        # dheff = tgeff * tglen
+        # theff = dhlen * dheff
+        #
+        # state_index = theff*thn_index + dheff*dhn_index + tgeff*tgn_index + dgn_index
 
-        tgeff = dglen
-        dheff = tgeff * tglen
-        theff = dhlen * dheff
-
-        state_index = theff*thn_index + dheff*dhn_index + tgeff*tgn_index + dgn_index
+        state_index = 0
         return state_index
 
     def get_start_state(self):
-        return self.start_id
+        return len(self.states)-1
 
     # R(s)
     def reward(self, state):

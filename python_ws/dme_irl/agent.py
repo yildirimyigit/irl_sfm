@@ -7,6 +7,8 @@ import numpy as np
 from env import MDP
 from neural_network import MyNN, sigm, linear, tanh, gaussian
 
+import sys
+
 
 class RLAgent:
     def __init__(self):
@@ -78,10 +80,10 @@ class IRLAgent:
         self.state_id = self.env.start_id
 
         self.vi_loop = 100
-        self.v = np.empty_like(self.env.states)
-        self.q = np.empty((len(self.env.states), len(self.env.actions)))
-        self.esvc = np.empty(len(self.env.states))
-        self.esvc_mat = np.empty((len(self.env.states), self.vi_loop))
+        self.v = np.empty((len(self.env.states), self.vi_loop), dtype=float)
+        self.q = np.empty((len(self.env.states), len(self.env.actions)), dtype=float)
+        self.esvc = np.empty(len(self.env.states), dtype=float)
+        self.esvc_mat = np.empty((len(self.env.states), self.vi_loop), dtype=float)
 
         self.emp_fc = 0
         self.calculate_emp_fc()
@@ -89,21 +91,29 @@ class IRLAgent:
     ###############################################
     # [1]
     def backward_pass(self):
-        self.v[:] = -np.inf
+        self.v[:] = -sys.float_info.max
         reward_vect = np.vectorize(self.reward)
         self.state_rewards = reward_vect(self.env.states)
 
-        for i in range(self.vi_loop):
-            self.v[self.env.goal_id] = 0
+        for i in range(self.vi_loop-1):
+            self.v[self.env.goal_id, i] = 0
 
-            for s in self.env.states:
+            for s in range(len(self.env.states)):
+                if s == self.env.goal_id:
+                    continue
                 state_reward = self.state_rewards[s]
-                for a in self.env.actions:
-                    self.q[s][a] = state_reward + np.matmul(self.env.transition[s][a], self.v)
+                for a in range(len(self.env.actions)):
+                    self.q[s][a] = state_reward + np.matmul(self.env.transition[s][a], self.v[:, i])
 
             # v  = softmax_a Q
             q = np.exp(self.q)
-            self.v = q/np.sum(q, axis=1)[:, None]
+            max_q = np.max(q, axis=1)   # max of each row: max q value over actions for each state
+            # replace 0 with 0.00...5 to get rid of div by 0
+            # sum_q = np.sum(q, axis=1)[:, None]
+            # sum_q[sum_q == 0] = np.nextafter(0, 1)
+            nonzero_ids = np.where(max_q != 0)
+            self.v[nonzero_ids, i+1] = max_q[nonzero_ids] / np.sum(q[nonzero_ids], axis=1)
+        print("- IRLAgent.backward_pass")
 
     ###############################################
 
@@ -136,13 +146,13 @@ class IRLAgent:
         self.emp_fc = 0
 
     def exp_fc(self):   # expected feature counts
-        return np.matmul(self.esvc.T * self.env.states)
+        return np.matmul(self.esvc.T, self.env.states)
 
     def policy(self, sid, aid):
         return np.exp(self.q[sid][aid] - self.v[sid])
 
     def reward(self, state):
-        return self.rew_nn.forward(state)
+        return self.rew_nn.forward(np.asarray([state.dg, state.tg, state.dh, state.th]))
 
     # def act(self, action):
     #     self.state_id, reward, goal_reached = self.env.step(self.env.states[self.state_id], action)

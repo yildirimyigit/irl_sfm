@@ -72,7 +72,7 @@ def main():
 	bag = rosbag.Bag(sys.argv[1])
 	initialize_positions(bag)
 
-	env = Environment(1, 3, 5, 5, Point(18.0, 10.0), Point(2.0, 10.0))
+	env = Environment(1, 5, 10, 10, Point(18.0, 10.0), Point(2.0, 10.0))
 	env.initialize_environment()
 
 	env.save_states('../../data/states.npy')
