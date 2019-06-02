@@ -115,7 +115,7 @@ class IRLAgent:
             nonzero_ids = np.where(max_q != 0)
             self.v[nonzero_ids, i+1] = max_q[nonzero_ids] / np.sum(q[nonzero_ids], axis=1)
 
-            print('\rPass: {}'.format((i+1)), end='')
+            print('\rBackward Pass: {}'.format((i+1)), end='')
         print("- IRLAgent.backward_pass")
 
     ###############################################
@@ -143,8 +143,8 @@ class IRLAgent:
                         sumesvc += self.env.transition[k][l][j]*self.policy(j, l)*self.esvc_mat[k][i]
                 self.esvc_mat[j][i+1] = sumesvc
 
-            print('\rPass: {}'.format((i+1)), end='')
-        self.esvc = np.sum(self.esvc_mat, 1)
+            print('\rForward Pass: {}'.format((i+1)), end='')
+        self.esvc = np.sum(self.esvc_mat, axis=1)
         print("- IRLAgent.forward_pass")
 
     ###############################################
