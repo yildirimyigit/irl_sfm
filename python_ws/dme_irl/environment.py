@@ -5,8 +5,8 @@ import numpy as np
 
 from utils import *
 
-min_goal_dist = 0.1
-min_human_dist = 0.15
+min_goal_dist = 0.2
+min_human_dist = 0.2
 
 
 # This class initializes actions and states arrays and also has the transaction function
