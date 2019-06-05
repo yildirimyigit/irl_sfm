@@ -59,7 +59,7 @@ def initialize_positions(bag):
 
 		for j in range(len(tracks[i])):
 			pose_positions_x[i].append(tracks[i][j].pose.pose.position.x)
-			pose_positions_y[i].append(tracks[i][j].pose.pose.position.x)
+			pose_positions_y[i].append(tracks[i][j].pose.pose.position.y)
 			pose_orientations_z[i].append(tracks[i][j].pose.pose.orientation.z)
 			pose_orientations_w[i].append(tracks[i][j].pose.pose.orientation.w)
 
