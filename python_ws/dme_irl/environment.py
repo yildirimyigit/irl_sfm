@@ -45,7 +45,8 @@ class Environment(object):
 
         # discretizing the distances in logarithmic scale
         current_goal_distance = min_goal_dist
-        max_human_dist = max_goal_distance = self.calculate_max_distance()
+        max_human_dist = 5
+        max_goal_distance = self.calculate_max_distance()
 
         while current_goal_distance < max_goal_distance:
             for i in range(self.theta_human_div):
