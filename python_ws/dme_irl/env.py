@@ -15,7 +15,7 @@ class MDP:
         self.delta_distance = 0.2
         self.gamma = 0.9
         # TODO: start and goal states
-        self.start_id = self.get_start_state()
+        self.start_id = 3074  # self.get_start_state()
         self.goal_id = 972
 
     # returns previously generated states and actions
