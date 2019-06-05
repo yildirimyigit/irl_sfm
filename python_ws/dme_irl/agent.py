@@ -116,7 +116,7 @@ class IRLAgent:
             self.v[nonzero_ids, i+1] = max_q[nonzero_ids] / np.sum(q[nonzero_ids], axis=1)
 
             print('\rBackward Pass: {}'.format((i+1)), end='')
-        print("- IRLAgent.backward_pass")
+        print("\n- IRLAgent.backward_pass")
 
     ###############################################
 
@@ -133,15 +133,16 @@ class IRLAgent:
     # [1]
     def forward_pass(self):  # esvc: expected state visitation count
         print("+ IRLAgent.forward_pass")
-        self.esvc_mat[self.env.start_id][0] = 1
+        self.esvc_mat[:, 0] = 0
+        self.esvc_mat[self.env.start_id, :] = 1
         for i in range(self.vi_loop-1):
             self.esvc_mat[self.env.goal_id][i] = 0
             for j in range(len(self.env.states)):
                 sumesvc = 0
                 for k in range(len(self.env.states)):
                     for l in range(len(self.env.actions)):  # indices: s:j, s':k, a:l
-                        sumesvc += self.env.transition[k][l][j]*self.policy(j, l)*self.esvc_mat[k][i]
-                self.esvc_mat[j][i+1] = sumesvc
+                        sumesvc += self.env.transition[k, l, j]*self.policy(k, l)*self.esvc_mat[k, i]
+                self.esvc_mat[j, i+1] = sumesvc
 
             print('\rForward Pass: {}'.format((i+1)), end='')
         self.esvc = np.sum(self.esvc_mat, axis=1)
