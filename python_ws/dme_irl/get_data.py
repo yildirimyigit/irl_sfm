@@ -1,83 +1,103 @@
 import rosbag
 import sys
-import math
+import numpy as np
 from environment import Environment
 from environment import Point
-from environment import Action
 from environment import State
 
 # README::
 # This program gets .bag file name and topic name as argument:
 # USAGE: python get_data.py <bag_file>
 
-# These arrays blow hold the data as 2D arrays. 1st dimension represents which message
-# the data comes from
-# 2nd dimension represents which person is this
-# Ex: pose_positions_x[i][j] means x position of jth person at ith message (iteration)
-pose_positions_x = []
-pose_positions_y = []
-pose_orientations_z = []
-pose_orientations_w = []
-
-twist_linears_x = []
-twist_linears_y = []
-twist_angulars_z = []
-
-# This array will be filled with distance of two agents in each iteration
-distances = []
+goal1 = Point(18.0, 10.0)
+goal2 = Point(2.0, 10.0)
 
 
-def calculate_distances():
-	for i in range(len(pose_positions_x)):
-		x_distance = (pose_positions_x[i][0] - pose_positions_x[i][1]) ** 2
-		y_distance = (pose_positions_y[i][0] - pose_positions_y[i][1]) ** 2
-		distance = (x_distance + y_distance) ** (1.0/2.0)
-		distances.append(distance)
+#
+# :param p0 first point, form: [x, y]
+# :param p1 second point, form: [x, y]
+#
+def calculate_distance(p0, p1):
+	return np.sqrt((p0[0]-p1[0]) ** 2 + (p0[1]-p1[1]) ** 2)
 
 
 def initialize_positions(bag):
 	print('+ initialize_positions()')
-	messages = []
-	topics = []
-	times = []
-	tracks = []
-	for topic, msg, t in bag.read_messages():
-		messages.append(msg)
-		topics.append(topic)
-		times.append(t)
-		tracks.append(msg.tracks)
 
-	for i in range(len(tracks)):
-		pose_positions_x.append([])
-		pose_positions_y.append([])
-		pose_orientations_w.append([])
-		pose_orientations_z.append([])
+	cur_pos = prev_pos = 0
+	raw_trajectories = []  # list of (goal, trajectory) tuples
+	one_trajectory = []  # list of [first, second] poses
+	first = True
+	goal_set = False
 
-		twist_linears_x.append([])
-		twist_linears_y.append([])
-		twist_angulars_z.append([])
+	goal = goal1
 
-		for j in range(len(tracks[i])):
-			pose_positions_x[i].append(tracks[i][j].pose.pose.position.x)
-			pose_positions_y[i].append(tracks[i][j].pose.pose.position.y)
-			pose_orientations_z[i].append(tracks[i][j].pose.pose.orientation.z)
-			pose_orientations_w[i].append(tracks[i][j].pose.pose.orientation.w)
+	for _, msg, _ in bag.read_messages():
+		pprev_pos = prev_pos
+		prev_pos = cur_pos
+		cur_pos = msg.tracks[0].pose.pose.position.x
 
-			twist_linears_x[i].append(tracks[i][j].twist.twist.linear.x)
-			twist_linears_y[i].append(tracks[i][j].twist.twist.linear.y)
-			twist_angulars_z[i].append(tracks[i][j].twist.twist.angular.z)
+		if pprev_pos < prev_pos < cur_pos or cur_pos < prev_pos < pprev_pos:  # no turning back in either direction
+			if not goal_set:
+				if pprev_pos < prev_pos < cur_pos:
+					goal = goal1
+				else:
+					goal = goal2
+				goal_set = True
+			first_human_pose = [msg.tracks[0].pose.pose.position.x, msg.tracks[0].pose.pose.position.y]
+			second_human_pose = [msg.tracks[1].pose.pose.position.x, msg.tracks[1].pose.pose.position.y]
+			one_trajectory.append([first_human_pose, second_human_pose])
+		else:
+			if not first:
+				raw_trajectories.append((one_trajectory, goal))
+				one_trajectory = []
+				goal_set = False
+			else:
+				first = False
+
+	return raw_trajectories
+
+	# print('*********')
+	# print(len(raw_trajectories))
+	# print('*********')
+	# for traj in raw_trajectories:
+	# 	print(traj)
+	# 	print('')
+
+
+def save_trajectories(raw_trajectories, path, env):
+	trajectories = []
+	for raw_trajectory, goal in raw_trajectories:
+		trajectory = []
+		for poses in raw_trajectory:
+			s = compute_state(poses[0], poses[1], goal, env)
+			trajectory.append(s)
+		trajectories.append(np.asarray(trajectory))
+
+	np.save(path, np.asarray(trajectories))
+
+
+def compute_state(first, second, goal, env):
+	dh = calculate_distance(first, second)
+	dg = calculate_distance(first, goal)
+
+	tg = th = 0
+
+	return env.find_closest_state(State(distance_goal=dg, theta_goal=tg, distance_human=dh, theta_human=th))
 
 
 def main():
 	bag = rosbag.Bag(sys.argv[1])
-	initialize_positions(bag)
+	raw_trajectories = initialize_positions(bag)
 
-	env = Environment(1, 5, 10, 10, Point(18.0, 10.0), Point(2.0, 10.0))
+	env = Environment(1, 5, 6, 6, goal1, goal2)
 	env.initialize_environment()
 
 	env.save_states('../../data/states.npy')
 	env.save_actions('../../data/actions.npy')
 	env.save_transitions('../../data/transitions.npy')
+
+	save_trajectories(raw_trajectories, '../../data/trajectories.npy', env)
 
 
 main()
