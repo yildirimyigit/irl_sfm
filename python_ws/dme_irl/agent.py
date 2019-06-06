@@ -10,65 +10,65 @@ from neural_network import MyNN, sigm, linear, tanh, gaussian
 import sys
 
 
-class RLAgent:
-    def __init__(self):
-        self.max_episode_steps = 1000
-        self.learning_rate = 0.9
-        self.epsilon = 0.25
-        self.max_episode = 100000
-        self.episode = 0
-        self.episode_reward = 0
-        self.episode_steps = 0
-
-        self.env = MDP()
-        self.state_id = self.env.get_start_state()
-        self.episode_rewards = np.zeros((self.max_episode, 1))
-
-        nof_actions = self.env.actions.shape[0]
-        nof_states = self.env.states.shape[0]
-        self.q_table = np.zeros((nof_states, nof_actions))
-
-    def act(self, action):
-        self.state_id, reward, goal_reached = self.env.step(self.env.states[self.state_id], action)
-        self.episode_steps += 1
-        self.episode_reward += reward
-        if goal_reached or self.episode_steps >= self.max_episode_steps:
-            self.restart_episode()
-            self.episode += 1
-            return reward, True
-        return reward, False
-
-    def restart_episode(self):
-        self.episode_rewards[self.episode] = self.episode_reward
-        print('Episode: {0} - Reward: {1}'.format(self.episode, self.episode_reward))
-        self.episode_reward = 0
-        self.episode_steps = 0
-        self.state_id = self.env.get_start_state()
-
-    def initialize_q(self):
-        self.q_table = np.random.rand(self.q_table.shape) / 100.0
-
-    def q_learn(self):
-        self.initialize_q()
-
-        while self.episode < self.max_episode:
-            episode_end = False
-            while not episode_end:
-                chosen_action_id = self.choose_action()
-                p_sid = self.state_id
-                c_reward, episode_end = self.act(chosen_action_id)
-                self.q_table[p_sid][chosen_action_id] += self.learning_rate * (c_reward + self.env.gamma * np.max(
-                    self.q_table[self.state_id][:]) - self.q_table[p_sid][chosen_action_id])
-
-    def choose_action(self):
-        if np.random.rand() < self.get_epsilon():  # epsilon-greedy
-            chosen_action = np.random.choice(range(self.env.actions.shape[0]))
-        else:
-            chosen_action = np.argmax(self.q_table[self.state_id][:])
-        return chosen_action
-
-    def get_epsilon(self):  # decaying epsilon
-        return np.max([0.05, self.epsilon*(1-(self.episode/self.max_episode))])
+# class RLAgent:
+#     def __init__(self):
+#         self.max_episode_steps = 1000
+#         self.learning_rate = 0.9
+#         self.epsilon = 0.25
+#         self.max_episode = 100000
+#         self.episode = 0
+#         self.episode_reward = 0
+#         self.episode_steps = 0
+#
+#         self.env = MDP()
+#         self.state_id = self.env.get_start_state()
+#         self.episode_rewards = np.zeros((self.max_episode, 1))
+#
+#         nof_actions = self.env.actions.shape[0]
+#         nof_states = self.env.states.shape[0]
+#         self.q_table = np.zeros((nof_states, nof_actions))
+#
+#     def act(self, action):
+#         self.state_id, reward, goal_reached = self.env.step(self.env.states[self.state_id], action)
+#         self.episode_steps += 1
+#         self.episode_reward += reward
+#         if goal_reached or self.episode_steps >= self.max_episode_steps:
+#             self.restart_episode()
+#             self.episode += 1
+#             return reward, True
+#         return reward, False
+#
+#     def restart_episode(self):
+#         self.episode_rewards[self.episode] = self.episode_reward
+#         print('Episode: {0} - Reward: {1}'.format(self.episode, self.episode_reward))
+#         self.episode_reward = 0
+#         self.episode_steps = 0
+#         self.state_id = self.env.get_start_state()
+#
+#     def initialize_q(self):
+#         self.q_table = np.random.rand(self.q_table.shape) / 100.0
+#
+#     def q_learn(self):
+#         self.initialize_q()
+#
+#         while self.episode < self.max_episode:
+#             episode_end = False
+#             while not episode_end:
+#                 chosen_action_id = self.choose_action()
+#                 p_sid = self.state_id
+#                 c_reward, episode_end = self.act(chosen_action_id)
+#                 self.q_table[p_sid][chosen_action_id] += self.learning_rate * (c_reward + self.env.gamma * np.max(
+#                     self.q_table[self.state_id][:]) - self.q_table[p_sid][chosen_action_id])
+#
+#     def choose_action(self):
+#         if np.random.rand() < self.get_epsilon():  # epsilon-greedy
+#             chosen_action = np.random.choice(range(self.env.actions.shape[0]))
+#         else:
+#             chosen_action = np.argmax(self.q_table[self.state_id][:])
+#         return chosen_action
+#
+#     def get_epsilon(self):  # decaying epsilon
+#         return np.max([0.05, self.epsilon*(1-(self.episode/self.max_episode))])
 
 
 class IRLAgent:
@@ -151,7 +151,13 @@ class IRLAgent:
     ###############################################
 
     def calculate_emp_fc(self):
-        self.emp_fc = 0
+        trajectories = np.load(self.env.path + 'trajectories.npy')
+
+        sum_traj_feats = np.sum(trajectories, axis=1)
+        sum_all_feats = np.sum(sum_traj_feats, axis=0)
+
+        self.emp_fc = sum_all_feats/len(trajectories)
+        print("aags")
 
     def exp_fc(self):   # expected feature counts
         return np.matmul(self.esvc.T, self.env.states)
