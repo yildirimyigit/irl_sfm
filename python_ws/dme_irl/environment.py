@@ -66,7 +66,7 @@ class Environment(object):
 
     # This method returns the probability distribution on the state space which corresponds to the probabilities of
     # the agent's being on each state when it takes the given action in given state.
-    # The angel 0 represents the front of the agent, and x-y axises are set according to angels. Thus in this
+    # The angle 0 represents the front of the agent, and x-y axes are set according to angles. Thus in this
     # case x represents vertical axis, and y represents horizontal axis. And sin&cos values are calculated
     # accordingly
     # left:-y, up:+x, right:+y, down:-x (according to the agent)
@@ -78,7 +78,7 @@ class Environment(object):
 
         # print(dgx, dgy, dhx, dhy)
 
-        # dgyn stands for new distance goal (y), the same for the rest of the vmiddle_degreeariables as well
+        # dgyn stands for new distance goal (y), the same for the rest of the variables as well
         if abs(math.cos(action.middle_degree) - math.cos(state.tg)) > 1.0:
             # it means that x dimensions of the action vector and distance_human vector is not the same
             if dgx < 0:
