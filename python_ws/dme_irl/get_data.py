@@ -9,8 +9,8 @@ from environment import State
 # This program gets .bag file name and topic name as argument:
 # USAGE: python get_data.py <bag_file>
 
-goal1 = Point(18.0, 10.0)
-goal2 = Point(2.0, 10.0)
+goal1 = [18.0, 10.0]
+goal2 = [2.0, 10.0]
 
 
 #
@@ -66,12 +66,15 @@ def initialize_positions(bag):
 
 
 def save_trajectories(raw_trajectories, path, env):
+	print('+ save_trajectories()')
 	trajectories = []
+
 	for raw_trajectory, goal in raw_trajectories:
 		trajectory = []
 		for poses in raw_trajectory:
 			s = compute_state(poses[0], poses[1], goal, env)
 			trajectory.append(s)
+
 		trajectories.append(np.asarray(trajectory))
 
 	np.save(path, np.asarray(trajectories))
@@ -87,17 +90,18 @@ def compute_state(first, second, goal, env):
 	dgx = goal[0] - first[0]
 	dgy = goal[1] - first[1]
 	
-	tg = math.atan2(-dgy, dgx)
-	th = math.atan2(-dhy, dhx)
+	tg = np.arctan2(-dgy, dgx)
+	th = np.arctan2(-dhy, dhx)
 
-	return env.find_closest_state(State(distance_goal=dg, theta_goal=tg, distance_human=dh, theta_human=th))
+	return env.state_list[env.find_closest_state(
+		State(distance_goal=dg, theta_goal=tg, distance_human=dh, theta_human=th))]
 
 
 def main():
 	bag = rosbag.Bag(sys.argv[1])
 	raw_trajectories = initialize_positions(bag)
 
-	env = Environment(1, 5, 6, 6, goal1, goal2)
+	env = Environment(1, 5, 6, 6, Point(goal1[0], goal1[1]), Point(goal2[0], goal2[1]))
 	env.initialize_environment()
 
 	env.save_states('../../data/states.npy')

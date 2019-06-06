@@ -45,7 +45,7 @@ class Environment(object):
 
         # discretizing the distances in logarithmic scale
         current_goal_distance = min_goal_dist
-        max_human_dist = 5
+        max_human_dist = 6.41
         max_goal_distance = self.calculate_max_distance()
 
         while current_goal_distance < max_goal_distance:
@@ -58,8 +58,8 @@ class Environment(object):
                         self.state_list.append(State(current_goal_distance, tg_change, current_human_dist, th_change))
                     current_human_dist *= 2
             current_goal_distance *= 2
-        for s in self.state_list:
-            print_state(s)
+        # for s in self.state_list:
+        #     print_state(s)
 
     def random_state(self):
         return np.random.choice(self.state_list)
