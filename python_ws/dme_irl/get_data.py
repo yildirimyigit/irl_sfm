@@ -57,13 +57,6 @@ def initialize_positions(bag):
 
 	return raw_trajectories
 
-	# print('*********')
-	# print(len(raw_trajectories))
-	# print('*********')
-	# for traj in raw_trajectories:
-	# 	print(traj)
-	# 	print('')
-
 
 def save_trajectories(raw_trajectories, path, env):
 	print('+ save_trajectories()')
@@ -73,7 +66,7 @@ def save_trajectories(raw_trajectories, path, env):
 		trajectory = []
 		for poses in raw_trajectory:
 			s = compute_state(poses[0], poses[1], goal, env)
-			trajectory.append(s)
+			trajectory.append(np.array([s.dg, s.tg, s.dh, s.th]))
 
 		trajectories.append(np.asarray(trajectory))
 
