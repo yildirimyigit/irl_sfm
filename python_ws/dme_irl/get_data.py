@@ -81,7 +81,14 @@ def compute_state(first, second, goal, env):
 	dh = calculate_distance(first, second)
 	dg = calculate_distance(first, goal)
 
-	tg = th = 0
+	dhx = second[0] - first[0]
+	dhy = second[1] - first[1]
+	
+	dgx = goal[0] - first[0]
+	dgy = goal[1] - first[1]
+	
+	tg = math.atan2(-dgy, dgx)
+	th = math.atan2(-dhy, dhx)
 
 	return env.find_closest_state(State(distance_goal=dg, theta_goal=tg, distance_human=dh, theta_human=th))
 
