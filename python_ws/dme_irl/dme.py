@@ -1,7 +1,8 @@
 """
   @author: yigit.yildirim@boun.edu.tr
 
-  Wulfmeier 2016, MaxEnt Deep IRL
+  - Wulfmeier 2016, MaxEnt Deep IRL
+  - Kitani 2012, Activity Forecasting
 """
 
 import numpy as np

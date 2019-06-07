@@ -109,9 +109,6 @@ class IRLAgent:
             # v  = softmax_a Q
             q = np.exp(self.q)
             max_q = np.max(q, axis=1)   # max of each row: max q value over actions for each state
-            # replace 0 with 0.00...5 to get rid of div by 0
-            # sum_q = np.sum(q, axis=1)[:, None]
-            # sum_q[sum_q == 0] = np.nextafter(0, 1)
             nonzero_ids = np.where(max_q != 0)
             self.v[nonzero_ids, i+1] = max_q[nonzero_ids] / np.sum(q[nonzero_ids], axis=1)
 
@@ -151,13 +148,13 @@ class IRLAgent:
     ###############################################
 
     def calculate_emp_fc(self):
-        trajectories = np.load(self.env.path + 'trajectories.npy')
+        trajectories = np.load(self.env.path + 'trajectories.npy', encoding='bytes')
+        sum_traj_feats = []
+        for trajectory in trajectories:
+            sum_traj_feats.append(np.sum(trajectory, axis=0))
 
-        sum_traj_feats = np.sum(trajectories, axis=1)
         sum_all_feats = np.sum(sum_traj_feats, axis=0)
-
         self.emp_fc = sum_all_feats/len(trajectories)
-        print("aags")
 
     def exp_fc(self):   # expected feature counts
         return np.matmul(self.esvc.T, self.env.states)
@@ -167,13 +164,3 @@ class IRLAgent:
 
     def reward(self, state):
         return self.rew_nn.forward(np.asarray([state.dg, state.tg, state.dh, state.th]))
-
-    # def act(self, action):
-    #     self.state_id, reward, goal_reached = self.env.step(self.env.states[self.state_id], action)
-    #     self.episode_steps += 1
-    #     self.episode_reward += reward
-    #     if goal_reached or self.episode_steps >= self.max_episode_steps:
-    #         self.restart_episode()
-    #         self.episode += 1
-    #         return reward, True
-    #     return reward, False

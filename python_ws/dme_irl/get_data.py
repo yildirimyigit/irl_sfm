@@ -61,15 +61,18 @@ def initialize_positions(bag):
 def save_trajectories(raw_trajectories, path, env):
 	print('+ save_trajectories()')
 	trajectories = []
-
+	i = 0
 	for raw_trajectory, goal in raw_trajectories:
 		trajectory = []
 		for poses in raw_trajectory:
 			s = compute_state(poses[0], poses[1], goal, env)
-			trajectory.append(np.array([s.dg, s.tg, s.dh, s.th]))
+			trajectory.append(np.asarray([s.dg, s.tg, s.dh, s.th]))
+			print(np.asarray([s.dg, s.tg, s.dh, s.th]))
 
 		trajectories.append(np.asarray(trajectory))
-
+		print(i)
+		print('')
+		i += 1
 	np.save(path, np.asarray(trajectories))
 
 
@@ -94,7 +97,7 @@ def main():
 	bag = rosbag.Bag(sys.argv[1])
 	raw_trajectories = initialize_positions(bag)
 
-	env = Environment(1, 5, 6, 6, Point(goal1[0], goal1[1]), Point(goal2[0], goal2[1]))
+	env = Environment(1, 3, 3, 36, Point(goal1[0], goal1[1]), Point(goal2[0], goal2[1]))
 	env.initialize_environment()
 
 	env.save_states('../../data/states.npy')
