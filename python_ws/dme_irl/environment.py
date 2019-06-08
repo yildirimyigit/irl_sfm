@@ -76,63 +76,31 @@ class Environment(object):
         dgx = state.dg * math.cos(state.tg)
         dgy = state.dg * math.sin(state.tg)
 
-        # print(dgx, dgy, dhx, dhy)
+        
+        goal_diff = abs(action.middle_degree - state.tg)
 
-        # dgyn stands for new distance goal (y), the same for the rest of the variables as well
-        if abs(math.cos(action.middle_degree) - math.cos(state.tg)) > 1.0:
-            # it means that x dimensions of the action vector and distance_human vector is not the same
-            if dgx < 0:
-                dgxn = dgx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
-            else:
-                dgxn = dgx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
-        else:   # then they are on the same side. then a step towards that side decreases the distance
-            if dgx < 0:
-                dgxn = dgx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
-            else:
-                dgxn = dgx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
+        dgxn = dgx - self.delta_distance/2.0 * math.cos(goal_diff)
 
-        if abs(math.sin(action.middle_degree) - math.sin(state.tg)) > 1.0:
-            # they are not on the same side with y axis
-            dgyn = dgy - self.delta_distance / 2.0 * math.sin(action.middle_degree)
-        else:   # then they are on the same side. then a step towards that side decreases the distance
-            dgyn = dgy + self.delta_distance / 2.0 * math.sin(action.middle_degree)
+        if dgy * action.middle_degree > 0: # if the action and the goal is on the same side
+        	dgyn = dgy - self.delta_distance/2.0 * abs(math.sin(goal_diff))
+        else:
+        	dgyn = dgy + self.delta_distance/2.0 * (abs(math.sin(goal_diff)))
 
-        if abs(dgxn) > math.pi:
-            dgxn = -dgxn
-        if abs(dgyn) > math.pi:
-            dgyn = -dgyn
-
-        tgn = math.atan2(-dgyn, dgxn)
+        tgn = math.atan2(dgyn, dgxn)
         dgn = (dgxn ** 2 + dgyn ** 2) ** (1.0 / 2.0)
 
-        if abs(math.cos(action.middle_degree) - math.cos(state.th)) > 1.0:
-            # it means that x dimensions of the action vector and distance_human vector is not the same
-            if dhx < 0:
-                dhxn = dhx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
-            else:
-                dhxn = dhx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
-        else:   # then they are on the same side. then a step towards that side decreases the distance
-            if dhx < 0:
-                dhxn = dhx + self.delta_distance / 2.0 * math.cos(action.middle_degree)
-            else:
-                dhxn = dhx - self.delta_distance / 2.0 * math.cos(action.middle_degree)
 
-        if abs(math.sin(action.middle_degree) - math.sin(state.th)) > 1.0:
-            # they are not on the same side with y axis
-            dhyn = dhy - self.delta_distance / 2.0 * math.sin(action.middle_degree)
-        else:   # then they are on the same side. then a step towards that side decreases the distance
-            dhyn = dhy + self.delta_distance / 2.0 * math.sin(action.middle_degree)
-                
-        if abs(dhxn) > math.pi:
-            dhxn = -dhxn
-        if abs(dhyn) > math.pi:
-            dhyn = -dhyn
+        human_diff = abs(action.middle_degree - state.th)
+        dhxn = dhx - self.delta_distance * math.cos(human_diff)
 
-        thn = math.atan2(-dhyn, dhxn)
+        if dhy * action.middle_degree > 0: # if the action and the goal is on the same side
+        	dhyn = dhy - self.delta_distance * abs(math.sin(human_diff))
+        else:
+        	dhyn = dhy + self.delta_distance * (abs(math.sin(human_diff)))
+        
+        thn = math.atan2(dhyn, dhxn)
         dhn = (dhxn ** 2 + dhyn ** 2) ** (1.0 / 2.0)
-
-        # print(dgxn, dgyn, dhxn, dhyn)
-        # print('dgn:', dgn, ' tgn:', tgn, ' dhn:', dhn, 'thn: ', thn)
+				
 
         state_prob_dist = np.zeros(len(self.state_list))
 
