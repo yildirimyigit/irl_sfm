@@ -86,8 +86,8 @@ def compute_state(first, second, goal, env):
 	dgx = goal[0] - first[0]
 	dgy = goal[1] - first[1]
 	
-	tg = np.arctan2(-dgy, dgx)
-	th = np.arctan2(-dhy, dhx)
+	tg = np.arctan2(dgy, dgx)
+	th = np.arctan2(dhy, dhx)
 
 	return env.state_list[env.find_closest_state(
 		State(distance_goal=dg, theta_goal=tg, distance_human=dh, theta_human=th))]
