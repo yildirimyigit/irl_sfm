@@ -1,0 +1,9 @@
+<launch>
+    <include file="$(find pedsim_simulator)/launch/sources_and_sinks.launch" />
+    
+    
+    <!--node pkg="tf" type="static_transform_publisher" name="east_broadcaster" args="1.5 2.5 0 0 0 0 1 odom east 50" />
+    <node pkg="tf" type="static_transform_publisher" name="west_broadcaster" args="27.5 2.5 0 0 0 0 1 odom west 50" /-->
+    
+    
+</launch>

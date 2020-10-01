@@ -97,7 +97,7 @@ def main():
 	bag = rosbag.Bag(sys.argv[1])
 	raw_trajectories = initialize_positions(bag)
 
-	env = Environment(1, 3, 3, 36, Point(goal1[0], goal1[1]), Point(goal2[0], goal2[1]))
+	env = Environment(1, 5, 9, 36, Point(goal1[0], goal1[1]), Point(goal2[0], goal2[1]))
 	env.initialize_environment()
 
 	env.save_states('../../data/states.npy')

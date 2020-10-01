@@ -76,15 +76,14 @@ class Environment(object):
         dgx = state.dg * math.cos(state.tg)
         dgy = state.dg * math.sin(state.tg)
 
-        
         goal_diff = abs(action.middle_degree - state.tg)
 
         dgxn = dgx - self.delta_distance/2.0 * math.cos(goal_diff)
 
         if dgy * action.middle_degree > 0: # if the action and the goal is on the same side
-        	dgyn = dgy - self.delta_distance/2.0 * abs(math.sin(goal_diff))
+            dgyn = dgy - self.delta_distance/2.0 * abs(math.sin(goal_diff))
         else:
-        	dgyn = dgy + self.delta_distance/2.0 * (abs(math.sin(goal_diff)))
+            dgyn = dgy + self.delta_distance/2.0 * (abs(math.sin(goal_diff)))
 
         tgn = math.atan2(dgyn, dgxn)
         dgn = (dgxn ** 2 + dgyn ** 2) ** (1.0 / 2.0)
@@ -94,13 +93,13 @@ class Environment(object):
         dhxn = dhx - self.delta_distance * math.cos(human_diff)
 
         if dhy * action.middle_degree > 0: # if the action and the goal is on the same side
-        	dhyn = dhy - self.delta_distance * abs(math.sin(human_diff))
+            dhyn = dhy - self.delta_distance * abs(math.sin(human_diff))
         else:
-        	dhyn = dhy + self.delta_distance * (abs(math.sin(human_diff)))
+            dhyn = dhy + self.delta_distance * (abs(math.sin(human_diff)))
         
         thn = math.atan2(dhyn, dhxn)
         dhn = (dhxn ** 2 + dhyn ** 2) ** (1.0 / 2.0)
-				
+
 
         state_prob_dist = np.zeros(len(self.state_list))
 

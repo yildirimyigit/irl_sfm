@@ -1,0 +1,6 @@
+<launch>
+
+    <node pkg="pedsim_data_recorder" type="record_pose.py" name="record_pose" />
+    <node pkg="pedsim_data_recorder" type="run_prediction.py" name="run_prediction" output="screen"/>
+
+</launch>
