@@ -1,0 +1,12 @@
+<launch>
+
+  <!--Load parameters-->
+  <rosparam command="load" file="$(find sfm_planner)/config/sfm.yaml" />
+
+  <!--Run recorder node-->
+  <node name="recorder" pkg="sfm_planner" type="recorder.py" />
+
+  <!--Run SFM node-->
+  <node name="sfm_controller" pkg="sfm_planner" type="sfm.py" output="screen" />
+
+</launch>
