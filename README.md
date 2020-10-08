@@ -9,3 +9,4 @@ SFM with IRL and CNMP
 ##### References
  - Markus Wulfmeier, Peter Ondruska, Ingmar Posner. Maximum Entropy Deep Inverse Reinforcement Learning
  - M. Yunus Seker, Mert Imre, Justus Piater and Emre Ugur. Conditional Neural Movement Primitives
+ - Gonzalo Ferrer, Anais Garrell and Alberto Sanfeliu. Robot companion: A social-force based approach with human awareness-navigation in crowded environments
