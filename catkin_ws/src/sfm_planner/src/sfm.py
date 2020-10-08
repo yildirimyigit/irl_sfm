@@ -10,7 +10,7 @@ from std_msgs.msg import Header
 import numpy as np
 
 
-MULT = 15
+MULT = 10
 
 
 class SFMController:
@@ -29,7 +29,7 @@ class SFMController:
     self.sum_radii = 0.43
     
     self.starting_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/start/position/x', 0.0), rospy.get_param('/start/position/y', -14.0), 0), Quaternion(0, 0, rospy.get_param('/start/orientation/z', 0.706),rospy.get_param('/start/orientation/w', 0.707))))
-    self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 14.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
+    self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 3.0), rospy.get_param('/goal/position/y', -6.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
     self.last_repulsive_force, self.last_attractive_force = Vector3(), Vector3()
     
     self.distance = self.calculate_distance(self.starting_pose, self.goal_pose)
@@ -44,7 +44,7 @@ class SFMController:
     self.last_pose = PoseStamped()
     self.obstacle_pose = PoseStamped()
     self.obstacle_pose.pose.position.x = 1
-    self.obstacle_pose.pose.position.y = 0
+    self.obstacle_pose.pose.position.y = -10
     
   def laser_callback(self, msg):
     self.last_repulsive_force = self.calculate_repulsive_force(msg)

@@ -23,7 +23,7 @@ def custom_loss(y_true, y_predicted):
 
 class OnlineCNMPRunner():
     def __init__(self):
-        model_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/combined/1601369200/cnmp_best_validation.h5'
+        model_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/1_obs_multi_goals/1601369200/cnmp_best_validation.h5'
         keras.losses.custom_loss = custom_loss
         self.model = load_model(f'{model_path}', custom_objects={'tf': tf})
 
@@ -64,7 +64,7 @@ class OnlineCNMPRunner():
         rate = rospy.Rate(3)
         
         #observation = np.array([0.0831583e-02, 2.8e+01, 1.006e+00, 14.0, 0.0, 2.01129232e-04]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
-        observation = np.array([0, 0, 1, -14, 0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
+        observation = np.array([0, 0, -3, -4, 0.0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
         
         while not rospy.is_shutdown():
             vel = Twist()
