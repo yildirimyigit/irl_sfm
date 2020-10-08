@@ -1,0 +1,9 @@
+<launch>
+
+  <!--Load parameters-->
+  <rosparam command="load" file="$(find sfm_planner)/config/sfm.yaml" />
+
+  <!--Run SFM-->
+  <node name="sfm_controller" pkg="sfm_planner" type="sfm.py" output="screen" />
+
+</launch>
