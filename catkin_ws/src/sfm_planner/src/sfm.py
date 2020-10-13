@@ -5,7 +5,7 @@ import tf
 import tf2_geometry_msgs
 from geometry_msgs.msg import Twist, Pose, Vector3, PoseStamped, Point, Quaternion, TransformStamped, Vector3Stamped
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Bool
 
 import numpy as np
 
@@ -33,18 +33,25 @@ class SFMController:
     self.last_repulsive_force, self.last_attractive_force = Vector3(), Vector3()
     
     self.distance = self.calculate_distance(self.starting_pose, self.goal_pose)
+    self.distance_to_closest_obstacle = Vector3()
+    self.distance_magnitude_to_closest_obstacle = 0
     self.goal_reached = False
     
     self.laser_subs = rospy.Subscriber("/scan", LaserScan, self.laser_callback)
     self.pose_subs = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
+    self.obs_0_pose_subs = rospy.Subscriber("/obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
     self.vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+    self.goal_reached_pub = rospy.Publisher("/sfm/goal_reached", Bool, queue_size=1)
     self.tf_listener = tf.TransformListener()
     
     ###
     self.last_pose = PoseStamped()
     self.obstacle_pose = PoseStamped()
-    self.obstacle_pose.pose.position.x = 1
-    self.obstacle_pose.pose.position.y = -10
+    # self.obstacle_pose.pose.position.x = 1
+    # self.obstacle_pose.pose.position.y = -10
+    
+    self.local_minima_angle_threshold = 0.001
+    self.local_minima_magnitude_threshold = 4
     
   def laser_callback(self, msg):
     self.last_repulsive_force = self.calculate_repulsive_force(msg)
@@ -53,17 +60,20 @@ class SFMController:
     self.last_pose = msg
     self.distance = self.calculate_distance(msg, self.goal_pose)
     self.last_attractive_force = self.calculate_attractive_force(self.distance)
+    
+  def obs_0_pose_callback(self, msg):
+    self.obstacle_pose = msg
   
   def calculate_repulsive_force(self, scan):
     # TODO: use scan (now using predefined obstacle pose)
     
-    distance_vec = self.calculate_distance(self.obstacle_pose, self.last_pose)
-    distance = self.calculate_magnitude(distance_vec)
-    direction = self.normalize(distance_vec)
+    self.distance_to_closest_obstacle = self.calculate_distance(self.obstacle_pose, self.last_pose)
+    self.distance_magnitude_to_closest_obstacle = self.calculate_magnitude(self.distance_to_closest_obstacle)
+    direction = self.normalize(self.distance_to_closest_obstacle)
     #rospy.loginfo(direction)
     force = Vector3()
-    force.x = self.force_strength * np.exp((self.sum_radii - distance)/self.force_range) * direction.x
-    force.y = self.force_strength * np.exp((self.sum_radii - distance)/self.force_range) * direction.y
+    force.x = self.force_strength * np.exp((self.sum_radii - self.distance_magnitude_to_closest_obstacle)/self.force_range) * direction.x
+    force.y = self.force_strength * np.exp((self.sum_radii - self.distance_magnitude_to_closest_obstacle)/self.force_range) * direction.y
     
     return force
   
@@ -92,14 +102,23 @@ class SFMController:
         continue
      
       if self.distance.x < self.x_thr and self.distance.y < self.y_thr:  # goal reached
-        if not self.goal_reached:
+        if not self.goal_reached:  # not reached before
           rospy.loginfo('Goal Reached!')
           self.goal_reached = True
       else:
         total_force = Vector3()
         
-        total_force.x = self.last_attractive_force.x + self.last_repulsive_force.x
-        total_force.y = self.last_attractive_force.y + self.last_repulsive_force.y
+        # Checking for the local minima:
+        attractive_unit = self.normalize(self.last_attractive_force)
+        repulsive_unit = self.normalize(self.last_repulsive_force)
+        total_unit_x = attractive_unit.x + repulsive_unit.x
+        if abs(total_unit_x) < self.local_minima_angle_threshold and self.distance_magnitude_to_closest_obstacle < self.local_minima_magnitude_threshold:
+            total_force.x = self.last_attractive_force.x + self.last_repulsive_force.x + np.random.normal()  # normal noise to ditch the local minima
+            total_force.y = self.last_attractive_force.y + self.last_repulsive_force.y
+            rospy.loginfo(total_unit_x)
+        else:
+            total_force.x = self.last_attractive_force.x + self.last_repulsive_force.x
+            total_force.y = self.last_attractive_force.y + self.last_repulsive_force.y
         self.last_cmd_vel = self.force_to_vel(total_force)
         
         # Calculated cmd_vel is in global frame. Transforming to base_link
@@ -121,9 +140,15 @@ class SFMController:
           vel.linear.y = rot_v[1] * magnitude_v
 
       self.vel_pub.publish(vel)
+      self.goal_reached_pub.publish(self.goal_reached)
+      
+      if self.goal_reached:
+        rospy.signal_shutdown('Goal Reached!')
 
   def normalize(self, vec3):
     vec_len = self.calculate_magnitude(vec3)
+    if vec_len == 0:
+        return Vector3()
     return Vector3(vec3.x/vec_len, vec3.y/vec_len, vec3.z/vec_len)
     
   def calculate_magnitude(self, vec3):
