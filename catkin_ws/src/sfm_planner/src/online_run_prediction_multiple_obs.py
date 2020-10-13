@@ -31,18 +31,20 @@ class OnlineCNMPRunner():
 
         #####################
         self.pose_subs = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
+        self.obs_pose_subs = rospy.Subscriber("/obstacle_pose", PoseStamped, self.obs_pose_callback)
         self.obs_0_pose_subs = rospy.Subscriber("/obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
+        self.obs_1_pose_subs = rospy.Subscriber("/obstacle_1_pose", PoseStamped, self.obs_1_pose_callback)
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
         #####################
 
         self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 14.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
 
         self.last_pose = PoseStamped()
-        self.obstacle_pose = PoseStamped()
+        self.obstacle_pose, self.obstacle0_pose, self.obstacle1_pose = PoseStamped(), PoseStamped(), PoseStamped()
         #self.obstacle_pose.pose.position.x = 1
         #self.obstacle_pose.pose.position.y = -10
         
-        self.observation = np.zeros((1, 1, self.d_x+self.d_gamma+self.d_y))
+        self.observation, self.observation0, self.observation1 = np.zeros((1, 1, self.d_x+self.d_gamma+self.d_y)), np.zeros((1, 1, self.d_x+self.d_gamma+self.d_y)), np.zeros((1, 1, self.d_x+self.d_gamma+self.d_y))
 
 
     def predict_model(self, observation, target_X):  # observation and target_X contain gamma values too
@@ -57,9 +59,17 @@ class OnlineCNMPRunner():
     def pose_callback(self, msg):
         self.last_pose = msg
     
-    def obs_0_pose_callback(self, msg):
+    def obs_pose_callback(self, msg):
         self.obstacle_pose = msg
         self.observation = np.array([0, 0, self.obstacle_pose.pose.position.x, self.obstacle_pose.pose.position.y-14, 0.0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
+        
+    def obs_0_pose_callback(self, msg):
+        self.obstacle0_pose = msg
+        self.observation0 = np.array([0, 0, self.obstacle0_pose.pose.position.x, self.obstacle0_pose.pose.position.y-14, 0.0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
+        
+    def obs_1_pose_callback(self, msg):
+        self.obstacle1_pose = msg
+        self.observation1 = np.array([0, 0, self.obstacle1_pose.pose.position.x, self.obstacle1_pose.pose.position.y-14, 0.0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
 
     def calculate_distance(self, p0, p1):
         distance = Vector3()
@@ -77,8 +87,16 @@ class OnlineCNMPRunner():
             
             distance_to_goal = self.calculate_distance(self.last_pose, self.goal_pose)  # X
             distance_to_obs = self.calculate_distance(self.last_pose, self.obstacle_pose)  # Gamma
+            distance_to_obs0 = self.calculate_distance(self.last_pose, self.obstacle0_pose)
+            distance_to_obs1 = self.calculate_distance(self.last_pose, self.obstacle1_pose)
             
-            target_X_Gamma = np.array([distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y]).reshape(1, 1, self.d_x+self.d_gamma)
+            distance = distance_to_obs
+            if abs(distance_to_obs0.y) < abs(distance_to_obs.y):
+                distance = distance_to_obs0
+            elif abs(distance_to_obs1.y) < abs(distance_to_obs.y):
+                distance = distance_to_obs1
+                
+            target_X_Gamma = np.array([distance_to_goal.x, distance_to_goal.y, distance.x, distance.y]).reshape(1, 1, self.d_x+self.d_gamma)
             #rospy.loginfo(target_X_Gamma)
             rospy.loginfo(self.observation)
             predicted_Y, predicted_std = self.predict_model(self.observation, target_X_Gamma)
