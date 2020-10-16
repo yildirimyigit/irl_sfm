@@ -90,16 +90,19 @@ class OnlineCNMPRunner():
             distance_to_obs0 = self.calculate_distance(self.last_pose, self.obstacle0_pose)
             distance_to_obs1 = self.calculate_distance(self.last_pose, self.obstacle1_pose)
             
+            observation = self.observation
             distance = distance_to_obs
             if abs(distance_to_obs0.y) < abs(distance_to_obs.y):
                 distance = distance_to_obs0
+                observation = self.observation0
             elif abs(distance_to_obs1.y) < abs(distance_to_obs.y):
                 distance = distance_to_obs1
+                observation = self.observation1
                 
             target_X_Gamma = np.array([distance_to_goal.x, distance_to_goal.y, distance.x, distance.y]).reshape(1, 1, self.d_x+self.d_gamma)
             #rospy.loginfo(target_X_Gamma)
-            rospy.loginfo(self.observation)
-            predicted_Y, predicted_std = self.predict_model(self.observation, target_X_Gamma)
+            rospy.loginfo(observation)
+            predicted_Y, predicted_std = self.predict_model(observation, target_X_Gamma)
             
             vel.linear.x = predicted_Y[0][0]
             vel.linear.y = predicted_Y[0][1]
