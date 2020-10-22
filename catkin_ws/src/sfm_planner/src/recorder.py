@@ -8,41 +8,61 @@ import time
 
 
 GOAL = np.array([rospy.get_param('/goal/position/x', 0), rospy.get_param('/goal/position/y', 14.0)])
-OBS = np.array([rospy.get_param('/obstacle/position/x', 1), rospy.get_param('/obstacle/position/y', 0.0)]) # obstacle pose
-SOURCE = np.array([0.0, -14.0])
+# OBS = np.array([rospy.get_param('/obstacle/position/x', 1), rospy.get_param('/obstacle/position/y', 0.0)]) # obstacle pose
+SOURCE = np.array([rospy.get_param('/start/position/x', 0), rospy.get_param('/start/position/y', -14.0)])
 
 
 class Recorder:
-    def __init__(self):
-        self.pose_subscriber = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
-        self.vel_subscriber = rospy.Subscriber("/cmd_vel", Twist, self.vel_callback)
-        self.goal_reached_subscriber = rospy.Subscriber("/sfm/goal_reached", Bool, self.goal_reached_callback)
-        data_path_prefix = '/home/yigit/Documents/projects/irl_sfm/data/demonstrations/sfm/1_obs_moving/novel/'
-        # data_path_suffix = str(int(time.time()))
-        data_path_suffix = str(OBS[1])
-        self.data_path = data_path_prefix + data_path_suffix
+    '''
+        @param obs_pose = np.array([x, y])
+    '''
+    def __init__(self, in_data_path='/home/yigit/Documents/projects/irl_sfm/data/demonstrations/sfm/'):
         self.demonstration = []  # [[d_g_x, d_g_y, d_o_x, d_o_y, vx, vy], ...]
         self.last_vel_x, self.last_vel_y = 0, 0
+        
+        self.is_saved = False
+        self.obstacle_pose_read = False
+        self.obstacle_pose = PoseStamped()
+        self.OBS = np.zeros(2)
+        
+        self.pose_subscriber = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
+        self.vel_subscriber = rospy.Subscriber("/cmd_vel", Twist, self.vel_callback)
+        self.obs_0_pose_subs = rospy.Subscriber("/obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
+        self.goal_reached_subscriber = rospy.Subscriber("/sfm/goal_reached", Bool, self.goal_reached_callback)
+        
+        self.data_path_prefix = in_data_path
 
     def vel_callback(self, msg):
         self.last_vel_x, self.last_vel_y = msg.linear.x, msg.linear.y
+    
+    def obs_0_pose_callback(self, msg):
+        if not self.obstacle_pose_read:  # run once
+            self.obstacle_pose = msg
+            self.OBS = np.array([int(self.obstacle_pose.pose.position.x), int(self.obstacle_pose.pose.position.y)])
+            
+            data_path_suffix = 'x_' + str(self.OBS[0]) + '_y_' + str(self.OBS[1])
+            self.data_path = self.data_path_prefix + data_path_suffix
+            
+            self.obstacle_pose_read = True
         
     def goal_reached_callback(self, msg):
-        if msg.data: # is True
+        if msg.data:  # is True
             self.save()
+            self.is_saved = True
             rospy.signal_shutdown('Goal Reached!')
 
     def pose_callback(self, msg):
-        pose_x = msg.pose.position.x
-        pose_y = msg.pose.position.y
-        pose_arr = np.array([pose_x, pose_y])
-        d_g_x, d_g_y = GOAL - pose_arr
-        d_o_x, d_o_y = OBS - pose_arr
-        
-        vx, vy = self.last_vel_x, self.last_vel_y
-        
-        state = np.array([d_g_x, d_g_y, d_o_x, d_o_y, vx, vy])
-        self.demonstration.append(state)
+        if self.obstacle_pose_read:
+            pose_x = msg.pose.position.x
+            pose_y = msg.pose.position.y
+            pose_arr = np.array([pose_x, pose_y])
+            d_g_x, d_g_y = GOAL - pose_arr
+            d_o_x, d_o_y = self.OBS - pose_arr
+            
+            vx, vy = self.last_vel_x, self.last_vel_y
+            
+            state = np.array([d_g_x, d_g_y, d_o_x, d_o_y, vx, vy])
+            self.demonstration.append(state)
 
     def save(self):
         np.save(self.data_path, np.array(self.demonstration))
@@ -50,5 +70,5 @@ class Recorder:
 
 if __name__ == '__main__':
     rospy.init_node('sfm_data_recorder', anonymous=True)
-    r = Recorder()
+    r = Recorder('/home/yigit/Documents/projects/irl_sfm/data/demonstrations/sfm/1_obs_huge/')
     rospy.spin()

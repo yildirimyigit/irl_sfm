@@ -29,7 +29,7 @@ class SFMController:
     self.sum_radii = 0.43
     
     self.starting_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/start/position/x', 0.0), rospy.get_param('/start/position/y', -14.0), 0), Quaternion(0, 0, rospy.get_param('/start/orientation/z', 0.706),rospy.get_param('/start/orientation/w', 0.707))))
-    self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 3.0), rospy.get_param('/goal/position/y', -6.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
+    self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 14.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
     self.last_repulsive_force, self.last_attractive_force = Vector3(), Vector3()
     
     self.distance = self.calculate_distance(self.starting_pose, self.goal_pose)
@@ -99,7 +99,7 @@ class SFMController:
         (trans,rot) = self.tf_listener.lookupTransform('/base_link', '/odom', rospy.Time(0))
         tf_ready = True
       except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-        continue
+        pass
      
       if self.distance.x < self.x_thr and self.distance.y < self.y_thr:  # goal reached
         if not self.goal_reached:  # not reached before
@@ -115,7 +115,6 @@ class SFMController:
         if abs(total_unit_x) < self.local_minima_angle_threshold and self.distance_magnitude_to_closest_obstacle < self.local_minima_magnitude_threshold:
             total_force.x = self.last_attractive_force.x + self.last_repulsive_force.x + np.random.normal()  # normal noise to ditch the local minima
             total_force.y = self.last_attractive_force.y + self.last_repulsive_force.y
-            rospy.loginfo(total_unit_x)
         else:
             total_force.x = self.last_attractive_force.x + self.last_repulsive_force.x
             total_force.y = self.last_attractive_force.y + self.last_repulsive_force.y
@@ -140,10 +139,13 @@ class SFMController:
           vel.linear.y = rot_v[1] * magnitude_v
 
       self.vel_pub.publish(vel)
+  #      rospy.loginfo(vel)
       self.goal_reached_pub.publish(self.goal_reached)
-      
+    
       if self.goal_reached:
-        rospy.signal_shutdown('Goal Reached!')
+        rospy.signal_shutdown('Shutting down...')
+        #return True
+      #return False
 
   def normalize(self, vec3):
     vec_len = self.calculate_magnitude(vec3)

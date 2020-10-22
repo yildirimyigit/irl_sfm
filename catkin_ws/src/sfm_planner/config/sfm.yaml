@@ -5,7 +5,7 @@ start:
 
 obstacle:
   position:
-    x: 0.0
+    x: 1.0
     y: 0.0
 
 goal:
