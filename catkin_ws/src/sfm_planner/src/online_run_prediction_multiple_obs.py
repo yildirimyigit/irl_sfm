@@ -23,7 +23,7 @@ def custom_loss(y_true, y_predicted):
 
 class OnlineCNMPRunner():
     def __init__(self):
-        model_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/1_obs_moving/1602468197/cnmp_best_validation.h5'
+        model_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/small_env_changing_s_g/1607473236/cnmp_best_validation.h5'
         keras.losses.custom_loss = custom_loss
         self.model = load_model(f'{model_path}', custom_objects={'tf': tf})
 
@@ -31,21 +31,23 @@ class OnlineCNMPRunner():
 
         #####################
         self.pose_subs = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
-        self.obs_pose_subs = rospy.Subscriber("/obstacle_pose", PoseStamped, self.obs_pose_callback)
-        self.obs_0_pose_subs = rospy.Subscriber("/obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
-        self.obs_1_pose_subs = rospy.Subscriber("/obstacle_1_pose", PoseStamped, self.obs_1_pose_callback)
+        
+        self.nof_obstacles = rospy.get_param('/nof_obstacles', 10)
+        self.obstacles_pose_subs = []
+        self.obstacle_poses = []
+        
+        for i in range(self.nof_obstacles):
+            self.obstacles_pose_subs.append(rospy.Subscriber("/obstacle_" + str(i) + "_pose", PoseStamped, self.obs_pose_callback, (i)))
+            self.obstacle_poses.append(PoseStamped())
+
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
         #####################
 
-        self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 14.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
+        self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 13.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
 
         self.last_pose = PoseStamped()
-        self.obstacle_pose, self.obstacle0_pose, self.obstacle1_pose = PoseStamped(), PoseStamped(), PoseStamped()
-        #self.obstacle_pose.pose.position.x = 1
-        #self.obstacle_pose.pose.position.y = -10
         
-        self.observation, self.observation0, self.observation1 = np.zeros((1, 1, self.d_x+self.d_gamma+self.d_y)), np.zeros((1, 1, self.d_x+self.d_gamma+self.d_y)), np.zeros((1, 1, self.d_x+self.d_gamma+self.d_y))
-
+        self.observations = np.zeros((self.nof_obstacles, 1, self.d_x+self.d_gamma+self.d_y))
 
     def predict_model(self, observation, target_X):  # observation and target_X contain gamma values too
         predicted_Y = np.zeros((1, self.d_y))
@@ -59,54 +61,66 @@ class OnlineCNMPRunner():
     def pose_callback(self, msg):
         self.last_pose = msg
     
-    def obs_pose_callback(self, msg):
-        self.obstacle_pose = msg
-        self.observation = np.array([0, 0, self.obstacle_pose.pose.position.x, self.obstacle_pose.pose.position.y-14, 0.0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
+    def obs_pose_callback(self, msg, index):
+        self.obstacle_poses[index] = msg
+        self.observations[index] = np.array([0, 0, self.obstacle_poses[index].pose.position.x, self.obstacle_poses[index].pose.position.y - self.goal_pose.pose.position.y, 0.0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
         
-    def obs_0_pose_callback(self, msg):
-        self.obstacle0_pose = msg
-        self.observation0 = np.array([0, 0, self.obstacle0_pose.pose.position.x, self.obstacle0_pose.pose.position.y-14, 0.0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
-        
-    def obs_1_pose_callback(self, msg):
-        self.obstacle1_pose = msg
-        self.observation1 = np.array([0, 0, self.obstacle1_pose.pose.position.x, self.obstacle1_pose.pose.position.y-14, 0.0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
-
     def calculate_distance(self, p0, p1):
         distance = Vector3()
         distance.x = p1.pose.position.x - p0.pose.position.x
         distance.y = p1.pose.position.y - p0.pose.position.y
         return distance
+        
+    def calculate_euclidean_distance(self, p0, p1):
+        distance = ((p1.pose.position.x - p0.pose.position.x)**2 + (p1.pose.position.y - p0.pose.position.y)**2)**0.5
+        return distance
+
+    def distance_to_closest_obstacle(self, pose, obstacles):  # obstacles in the front
+        min_distance = 1000000
+        min_distance_id = -1
+        for i, p in obstacles.items():
+            dist = self.calculate_euclidean_distance(pose, p)
+            rospy.loginfo(str(i)+' '+str(dist))
+            if dist < min_distance:
+                min_distance = dist
+                min_distance_id = i
+                
+        return min_distance_id, min_distance
 
     def execute(self):
         rate = rospy.Rate(3)
         
-        #observation = np.array([0.0831583e-02, 2.8e+01, 1.006e+00, 14.0, 0.0, 2.01129232e-04]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
-        
+        last_passed = -1
         while not rospy.is_shutdown():
             vel = Twist()
             
             distance_to_goal = self.calculate_distance(self.last_pose, self.goal_pose)  # X
-            distance_to_obs = self.calculate_distance(self.last_pose, self.obstacle_pose)  # Gamma
-            distance_to_obs0 = self.calculate_distance(self.last_pose, self.obstacle0_pose)
-            distance_to_obs1 = self.calculate_distance(self.last_pose, self.obstacle1_pose)
             
-            observation = self.observation
-            distance = distance_to_obs
-            if abs(distance_to_obs0.y) < abs(distance_to_obs.y):
-                distance = distance_to_obs0
-                observation = self.observation0
-            elif abs(distance_to_obs1.y) < abs(distance_to_obs.y):
-                distance = distance_to_obs1
-                observation = self.observation1
+            obstacles_in_front = {}
+            for i in range(self.nof_obstacles-1, -1, -1):
+                if self.last_pose.pose.position.y <= self.obstacle_poses[i].pose.position.y:  # obstacle is in the front
+                    obstacles_in_front.update({i:self.obstacle_poses[i]})
+
+            if len(obstacles_in_front) == 0:  # if the last one is passed, use the closest as the gamma and observation
+                obstacles_in_front.update({last_passed:self.obstacle_poses[last_passed]})
+
+            obstacle, dist = self.distance_to_closest_obstacle(self.last_pose, obstacles_in_front)
+
+            distance_to_obs = self.calculate_distance(self.last_pose, self.obstacle_poses[obstacle])  # Gamma
+            observation = self.observations[obstacle].reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
                 
-            target_X_Gamma = np.array([distance_to_goal.x, distance_to_goal.y, distance.x, distance.y]).reshape(1, 1, self.d_x+self.d_gamma)
-            #rospy.loginfo(target_X_Gamma)
+            target_X_Gamma = np.array([distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y]).reshape(1, 1, self.d_x+self.d_gamma)
+            rospy.loginfo('***')
+            rospy.loginfo(obstacle)
             rospy.loginfo(observation)
+            rospy.loginfo(target_X_Gamma)
             predicted_Y, predicted_std = self.predict_model(observation, target_X_Gamma)
-            
-            vel.linear.x = predicted_Y[0][0]
-            vel.linear.y = predicted_Y[0][1]
-            self.pub.publish(vel)
+                
+            if obstacle != -1:
+                last_passed = obstacle
+                vel.linear.x = predicted_Y[0][0]
+                vel.linear.y = predicted_Y[0][1]
+                self.pub.publish(vel)
             rate.sleep()
 
 

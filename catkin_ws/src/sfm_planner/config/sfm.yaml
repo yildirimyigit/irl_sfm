@@ -1,14 +1,14 @@
 start:
   position:
     x: 0.0
-    y: -14.0
+    y: 0.0
 
 obstacle:
   position:
     x: 1.0
-    y: 0.0
+    y: 6.0
 
 goal:
   position:
     x: 0.0
-    y: 14.0
+    y: 13.0

@@ -25,10 +25,10 @@ class Conductor:
         except:
             pass
         
-        x = np.array([-4, -3, -2, -1, 0, 2, 3, 4])
+        x = np.hstack((np.arange(-3.0, 0.6, 0.1), np.arange(1.5, 3.1, 0.1)))
         nx = np.array([1])
-        y = np.hstack((np.array(range(-10, 0)), np.array(range(1, 11))))
-        ny = np.array([0])
+        y = np.arange(2, 10.1, 0.5)
+        ny = np.array([6])
         self.obs_poses = np.array([[x0, y0] for x0 in x for y0 in y])
         
         self.novel_obs_pose = np.array([[x0, y0] for x0 in nx for y0 in ny])
@@ -49,7 +49,8 @@ class Conductor:
         launch = roslaunch.scriptapi.ROSLaunch()
         launch.start()        
         
-        for obs_pose in np.vstack((self.obs_poses, self.novel_obs_pose)):
+        #for obs_pose in np.vstack((self.obs_poses, self.novel_obs_pose)):
+        for obs_pose in self.novel_obs_pose:
             vrep.simxStartSimulation(self.client_id,vrep.simx_opmode_blocking)
             _, old_obs_pose = vrep.simxGetObjectPosition(self.client_id, obstacle_handle, -1, vrep.simx_opmode_oneshot)
             returnCode = vrep.simxSetObjectPosition(self.client_id, obstacle_handle, -1, (obs_pose[0], obs_pose[1], old_obs_pose[2]), vrep.simx_opmode_oneshot)
@@ -64,13 +65,14 @@ class Conductor:
             #    rate.sleep()
             
             launch.launch(recorder_node)
+            time.sleep(0.5)
             process = launch.launch(sfm_node)
             
             while process.is_alive():
                 continue
             
             vrep.simxStopSimulation(self.client_id,vrep.simx_opmode_blocking)
-            time.sleep(1)
+            time.sleep(0.5)
         
         
 if __name__ == '__main__':
@@ -83,7 +85,7 @@ if __name__ == '__main__':
     
     rospy.init_node('test_conductor', anonymous=True)
     
-    c = Conductor('/home/yigit/Documents/projects/irl_sfm/data/demonstrations/sfm/1_obs_huge/', clientID)
+    c = Conductor('/home/yigit/Documents/projects/irl_sfm/data/demonstrations/sfm/small_env_changing_s_g/', clientID)
     c.execute()
     
     vrep.simxFinish(-1)

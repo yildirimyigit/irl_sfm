@@ -6,6 +6,8 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 
 import numpy as np
+import time
+import os
 
 import rospy
 from geometry_msgs.msg import Twist, Pose, Vector3, PoseStamped, Point, Vector3Stamped, Quaternion
@@ -21,9 +23,10 @@ def custom_loss(y_true, y_predicted):
     return loss
 
 
-class OnlineCNMPRunner():
+class OnlineCNMPRunner:
     def __init__(self):
-        model_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/1_obs_moving/1602468197/cnmp_best_validation.h5'
+        self.root_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/small_env_changing_s_g/1607473236/'
+        model_path = f'{self.root_path}cnmp_best_validation.h5'
         keras.losses.custom_loss = custom_loss
         self.model = load_model(f'{model_path}', custom_objects={'tf': tf})
 
@@ -35,7 +38,7 @@ class OnlineCNMPRunner():
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
         #####################
 
-        self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 14.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
+        self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 13.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
 
         self.last_pose = PoseStamped()
         self.obstacle_pose = PoseStamped()
@@ -43,6 +46,10 @@ class OnlineCNMPRunner():
         #self.obstacle_pose.pose.position.y = -10
         
         self.observation = np.zeros((1, 1, self.d_x+self.d_gamma+self.d_y))
+        
+        ###
+        
+        self.states = []  # [[d_g_x, d_g_y, d_o_x, d_o_y, vx, vy], ...]
 
 
     def predict_model(self, observation, target_X):  # observation and target_X contain gamma values too
@@ -59,7 +66,7 @@ class OnlineCNMPRunner():
     
     def obs_0_pose_callback(self, msg):
         self.obstacle_pose = msg
-        self.observation = np.array([0, 0, self.obstacle_pose.pose.position.x, self.obstacle_pose.pose.position.y-14, 0.0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
+        self.observation = np.array([0, 0, self.obstacle_pose.pose.position.x-self.goal_pose.pose.position.x, self.goal_pose.pose.position.y-self.obstacle_pose.pose.position.y, 0.0, 0.0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
 
     def calculate_distance(self, p0, p1):
         distance = Vector3()
@@ -86,10 +93,22 @@ class OnlineCNMPRunner():
             vel.linear.x = predicted_Y[0][0]
             vel.linear.y = predicted_Y[0][1]
             self.pub.publish(vel)
+            self.states.append(np.array([distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y, predicted_Y[0][0], predicted_Y[0][1]]))
             rate.sleep()
 
+    def save_states(self):
+        runs_path = f'{self.root_path}/runs/'
+        try:
+            os.mkdir(runs_path)
+        except:
+            pass
+        path_suffix = 'x_' + str(round(self.obstacle_pose.pose.position.x, 1)) + '_y_' + str(round(self.obstacle_pose.pose.position.y, 1))
+        this_run_path = runs_path + path_suffix + '_' + str(int(time.time())) + '.npy'
+        np.save(this_run_path, np.array(self.states))
+    
 
 if __name__ == '__main__':
     rospy.init_node('online_sfm_control_with_cnmp')
     ocr = OnlineCNMPRunner()
     ocr.execute()
+    ocr.save_states()
