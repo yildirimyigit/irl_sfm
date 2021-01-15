@@ -11,7 +11,7 @@ import os
 
 import rospy
 from geometry_msgs.msg import Twist, Pose, Vector3, PoseStamped, Point, Vector3Stamped, Quaternion
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Float32MultiArray
 
 
 def custom_loss(y_true, y_predicted):
@@ -36,14 +36,13 @@ class OnlineCNMPRunner:
         self.pose_subs = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
         self.obs_0_pose_subs = rospy.Subscriber("/obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        self.state_pub = rospy.Publisher('/state_sub', Float32MultiArray, queue_size=1)
         #####################
 
         self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 13.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
 
         self.last_pose = PoseStamped()
         self.obstacle_pose = PoseStamped()
-        #self.obstacle_pose.pose.position.x = 1
-        #self.obstacle_pose.pose.position.y = -10
         
         self.observation = np.zeros((1, 1, self.d_x+self.d_gamma+self.d_y))
         
@@ -75,7 +74,7 @@ class OnlineCNMPRunner:
         return distance
 
     def execute(self):
-        rate = rospy.Rate(3)
+        rate = rospy.Rate(10)
         
         #observation = np.array([0.0831583e-02, 2.8e+01, 1.006e+00, 14.0, 0.0, 2.01129232e-04]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
         
@@ -93,7 +92,11 @@ class OnlineCNMPRunner:
             vel.linear.x = predicted_Y[0][0]
             vel.linear.y = predicted_Y[0][1]
             self.pub.publish(vel)
-            self.states.append(np.array([distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y, predicted_Y[0][0], predicted_Y[0][1]]))
+            
+            state = [distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y, predicted_Y[0][0], predicted_Y[0][1]]
+            self.states.append(np.array(state))
+            state_array = Float32MultiArray(data=state)
+            self.state_pub.publish(state_array)
             rate.sleep()
 
     def save_states(self):

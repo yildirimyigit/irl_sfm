@@ -9,7 +9,7 @@ import numpy as np
 
 import rospy
 from geometry_msgs.msg import Twist, Pose, Vector3, PoseStamped, Point, Vector3Stamped, Quaternion
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Float32MultiArray
 
 
 def custom_loss(y_true, y_predicted):
@@ -41,6 +41,7 @@ class OnlineCNMPRunner():
             self.obstacle_poses.append(PoseStamped())
 
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        self.state_pub = rospy.Publisher('/state_sub', Float32MultiArray, queue_size=1)
         #####################
 
         self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 13.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
@@ -110,12 +111,17 @@ class OnlineCNMPRunner():
             observation = self.observations[obstacle].reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
                 
             target_X_Gamma = np.array([distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y]).reshape(1, 1, self.d_x+self.d_gamma)
-            rospy.loginfo('***')
-            rospy.loginfo(obstacle)
-            rospy.loginfo(observation)
+            # rospy.loginfo('***')
+            # rospy.loginfo(obstacle)
+            #rospy.loginfo(observation)
             rospy.loginfo(target_X_Gamma)
             predicted_Y, predicted_std = self.predict_model(observation, target_X_Gamma)
-                
+            
+            # state = [distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y, predicted_Y[0][0], predicted_Y[0][1]]
+            state = [distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y]
+            state_array = Float32MultiArray(data=state)
+            self.state_pub.publish(state_array)
+            
             if obstacle != -1:
                 last_passed = obstacle
                 vel.linear.x = predicted_Y[0][0]
