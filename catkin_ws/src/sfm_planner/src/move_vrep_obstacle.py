@@ -8,8 +8,8 @@ except:
     print('BOOM')
 
 
-vel = -0.95  # m/s
-x_pose = -1
+vel = -0.35  # m/s
+x_pose = 1.0
 y_pose_start, y_pose_limit = 9.5, 2.5
 
 vrep.simxFinish(-1)
