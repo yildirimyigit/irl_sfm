@@ -49,8 +49,8 @@ class Conductor:
         launch = roslaunch.scriptapi.ROSLaunch()
         launch.start()        
         
-        #for obs_pose in np.vstack((self.obs_poses, self.novel_obs_pose)):
-        for obs_pose in self.novel_obs_pose:
+        for obs_pose in np.vstack((self.obs_poses, self.novel_obs_pose)):
+        #for obs_pose in self.novel_obs_pose:
             vrep.simxStartSimulation(self.client_id,vrep.simx_opmode_blocking)
             _, old_obs_pose = vrep.simxGetObjectPosition(self.client_id, obstacle_handle, -1, vrep.simx_opmode_oneshot)
             returnCode = vrep.simxSetObjectPosition(self.client_id, obstacle_handle, -1, (obs_pose[0], obs_pose[1], old_obs_pose[2]), vrep.simx_opmode_oneshot)
