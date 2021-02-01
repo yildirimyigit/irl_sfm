@@ -26,8 +26,10 @@ class OnlineCNMPRunner():
         model_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/small_env_changing_s_g/1607473236/cnmp_best_validation.h5'
         keras.losses.custom_loss = custom_loss
         self.model = load_model(f'{model_path}', custom_objects={'tf': tf})
+        self.latent_layer = Model(inputs=self.model.input, outputs=self.model.get_layer('obs_mlp').get_output_at(-1))
 
         self.d_x, self.d_y, self.d_gamma = 2, 2, 2
+        self.latent_shape = (1, 1, 128)
 
         #####################
         self.pose_subs = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
@@ -64,7 +66,8 @@ class OnlineCNMPRunner():
     
     def obs_pose_callback(self, msg, index):
         self.obstacle_poses[index] = msg
-        self.observations[index] = np.array([0, 0, self.obstacle_poses[index].pose.position.x, self.obstacle_poses[index].pose.position.y - self.goal_pose.pose.position.y, 0.0, 0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
+        # conditioned on the observation
+        self.observations[index] = np.array([0, 0, self.obstacle_poses[index].pose.position.x, self.obstacle_poses[index].pose.position.y - self.goal_pose.pose.position.y, 0.0, 0.0]).reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
         
     def calculate_distance(self, p0, p1):
         distance = Vector3()
@@ -81,7 +84,7 @@ class OnlineCNMPRunner():
         min_distance_id = -1
         for i, p in obstacles.items():
             dist = self.calculate_euclidean_distance(pose, p)
-            rospy.loginfo(str(i)+' '+str(dist))
+            # rospy.loginfo(str(i)+' '+str(dist))
             if dist < min_distance:
                 min_distance = dist
                 min_distance_id = i
@@ -89,7 +92,7 @@ class OnlineCNMPRunner():
         return min_distance_id, min_distance
 
     def execute(self):
-        rate = rospy.Rate(3)
+        rate = rospy.Rate(10)
         
         last_passed = -1
         while not rospy.is_shutdown():
@@ -113,12 +116,18 @@ class OnlineCNMPRunner():
             target_X_Gamma = np.array([distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y]).reshape(1, 1, self.d_x+self.d_gamma)
             # rospy.loginfo('***')
             # rospy.loginfo(obstacle)
-            #rospy.loginfo(observation)
-            rospy.loginfo(target_X_Gamma)
+            # rospy.loginfo(observation)
+            rospy.loginfo([observation, target_X_Gamma])
             predicted_Y, predicted_std = self.predict_model(observation, target_X_Gamma)
             
+            ll_prediction = self.latent_layer.predict([observation, target_X_Gamma]).reshape(self.latent_shape[2])
+            
+            # 6D state-action
             # state = [distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y, predicted_Y[0][0], predicted_Y[0][1]]
-            state = [distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y]
+            # 4D state
+            # state = [distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y]
+            # <self.latent_shape[2]>D latent encoding
+            state = ll_prediction.tolist()
             state_array = Float32MultiArray(data=state)
             self.state_pub.publish(state_array)
             
