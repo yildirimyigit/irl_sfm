@@ -28,7 +28,7 @@ class Conductor:
             os.mkdir(self.root_path + 'novel/')
         except OSError as exc:
             if exc.errno == errno.EEXIST:
-                print('Folder exists. Moving on with\n%s', root_path)
+                print('Folder exists. Moving on with \n', root_path)
                 pass
             else:
                 raise exc
@@ -62,19 +62,13 @@ class Conductor:
             vrep.simxStartSimulation(self.client_id,vrep.simx_opmode_blocking)
             _, old_obs_pose = vrep.simxGetObjectPosition(self.client_id, obstacle_handle, -1, vrep.simx_opmode_oneshot)
             returnCode = vrep.simxSetObjectPosition(self.client_id, obstacle_handle, -1, (obs_pose[0], obs_pose[1], old_obs_pose[2]), vrep.simx_opmode_oneshot)
-
-            # recorder = Recorder(obs=obs_pose, in_data_path=self.root_path)
-            # sfm_controller = SFMController()
-            # goal_reached = False
-
-            #while not goal_reached:
-            #    goal_reached = sfm_controller.execute()
-            #    recorder.add_step()
-            #    rate.sleep()
-
+            
+            rospy.loginfo('starting')
             launch.launch(recorder_node)
+            rospy.loginfo('recorder started')
             time.sleep(0.5)
             process = launch.launch(sfm_node)
+            rospy.loginfo('controller started')
 
             while process.is_alive():
                 continue
