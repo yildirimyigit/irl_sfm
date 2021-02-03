@@ -19,22 +19,22 @@ class Recorder:
     def __init__(self, in_data_path='/home/yigit/Documents/projects/irl_sfm/data/demonstrations/sfm/'):
         self.demonstration = []  # [[d_g_x, d_g_y, d_o_x, d_o_y, vx, vy, x, y], ...]
         self.last_vel_x, self.last_vel_y = 0, 0
-        
+
         self.is_saved = False
         self.obstacle_pose_read = False
         self.obstacle_pose = PoseStamped()
         self.OBS = np.zeros(2)
-        
+
         self.pose_subscriber = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
         self.vel_subscriber = rospy.Subscriber("/cmd_vel", Twist, self.vel_callback)
         self.obs_0_pose_subs = rospy.Subscriber("/obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
         self.goal_reached_subscriber = rospy.Subscriber("/sfm/goal_reached", Bool, self.goal_reached_callback)
-        
-        self.data_path_root = in_data_path
+
+        self.data_path_root = rospy.get_param('/recorder_root_path', in_data_path)
 
     def vel_callback(self, msg):
         self.last_vel_x, self.last_vel_y = msg.linear.x, msg.linear.y
-    
+
     def obs_0_pose_callback(self, msg):
         if not self.obstacle_pose_read:  # run once
             self.obstacle_pose = msg
@@ -42,9 +42,9 @@ class Recorder:
             self.OBS = np.array([self.obstacle_pose.pose.position.x, self.obstacle_pose.pose.position.y])
             data_path_suffix = 'x_' + str(round(self.OBS[0], 1)) + '_y_' + str(round(self.OBS[1], 1))
             self.data_path = self.data_path_root + data_path_prefix + '_' + data_path_suffix
-            
+
             self.obstacle_pose_read = True
-        
+
     def goal_reached_callback(self, msg):
         if msg.data:  # is True
             self.save()
@@ -59,9 +59,9 @@ class Recorder:
                 pose_arr = np.array([pose_x, pose_y])
                 d_g_x, d_g_y = GOAL - pose_arr
                 d_o_x, d_o_y = self.OBS - pose_arr
-                
+
                 vx, vy = self.last_vel_x, self.last_vel_y
-                
+
                 state = np.array([d_g_x, d_g_y, d_o_x, d_o_y, vx, vy, pose_x, pose_y])
                 self.demonstration.append(state)
 
