@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
     rospy.init_node('test_conductor', anonymous=True)
 
-    c = Conductor('/home/yigit/Documents/projects/irl_sfm/catkin_ws/src/sfm_planner/data/', clientID)
+    c = Conductor('/home/irl_sfm/catkin_ws/src/sfm_planner/data/small_random_s_g/', clientID)
     c.execute()
 
     vrep.simxFinish(-1)
