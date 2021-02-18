@@ -21,10 +21,6 @@ except:
 
 class Conductor:
     def __init__(self, cid):
-#        self.scenario = 'small_env_changing_s_g/headless'
-        self.scenario = 'small_env_changing_s_g'
-        
-        rospy.set_param('/scenario', self.scenario)
 
         self.num_max_tests = int(1e6)
 
@@ -34,6 +30,7 @@ class Conductor:
         self.obs_y = [2, 10]
 
         self.client_id = cid
+        self.scenario = rospy.get_param('/scenario')
         self.root_path = rospy.get_param('/recorder_root_path')
 
         try:
