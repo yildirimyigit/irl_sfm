@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <!--Load parameters-->
+  <rosparam command="load" file="$(find sfm_planner)/config/test_conductor.yaml" />
+
+  <!--Run Test Conductor-->
+  <node name="test_conductor" pkg="sfm_planner" type="test_conductor.py" output="screen" />
+
+</launch>
