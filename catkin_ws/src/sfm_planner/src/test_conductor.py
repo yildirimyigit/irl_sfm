@@ -89,7 +89,7 @@ class Conductor:
             rospy.set_param('/obstacle/position/y', float(obs_y))
         
             _, old_obs_pose = vrep.simxGetObjectPosition(self.client_id, obstacle_handle, -1, vrep.simx_opmode_oneshot)
-            returnCode = vrep.simxSetObjectPosition(self.client_id, obstacle_handle, -1, (obs_x, obs_y, old_obs_pose[2]), vrep.simx_opmode_oneshot)
+            returnCode = vrep.simxSetObjectPosition(self.client_id, obstacle_handle, -1, (obs_x, obs_y, 2.0), vrep.simx_opmode_oneshot)
             _, old_robotino_pose = vrep.simxGetObjectPosition(self.client_id, robotino_handle, -1, vrep.simx_opmode_oneshot)
             returnCode = vrep.simxSetObjectPosition(self.client_id, robotino_handle, -1, (source_x, 0, old_robotino_pose[2]), vrep.simx_opmode_oneshot)
             _, old_goal_pose = vrep.simxGetObjectPosition(self.client_id, goal_handle, -1, vrep.simx_opmode_oneshot)
