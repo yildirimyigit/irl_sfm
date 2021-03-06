@@ -104,6 +104,7 @@ class SFMController:
         (trans,rot) = self.tf_listener.lookupTransform('/base_link', '/odom', rospy.Time(0))
         tf_ready = True
       except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+      rospy.logerr('exception')
         pass
 
       if self.distance.x < self.x_thr and self.distance.y < self.y_thr:  # goal reached
@@ -140,11 +141,12 @@ class SFMController:
           magnitude_v = self.calculate_magnitude(v)
 
           vel = Twist()
-          vel.linear.x = rot_v[0] * magnitude_v
-          vel.linear.y = rot_v[1] * magnitude_v
+          
+          vel.linear.x = max(min(rot_v[0] * magnitude_v, self.max_forward_vel), -self.max_forward_vel)
+          vel.linear.y = max(min(rot_v[1] * magnitude_v, self.max_lateral_vel), -self.max_lateral_vel)
 
       self.vel_pub.publish(vel)
-  #      rospy.loginfo(vel)
+      
       self.goal_reached_pub.publish(self.goal_reached)
 
       if self.goal_reached:
@@ -169,9 +171,8 @@ class SFMController:
 
   def force_to_vel(self, force):
     vel = Twist()
-    vel.linear.x = max(min(force.x * self.linear_max_speed, self.max_forward_vel), -self.max_forward_vel)
-    vel.linear.y = max(min(force.y * self.lateral_max_speed, self.max_lateral_vel), -self.max_lateral_vel)
-    # rospy.loginfo(vel)
+    vel.linear.x = force.x * self.linear_max_speed
+    vel.linear.y = force.y * self.lateral_max_speed
     return vel
 
 
