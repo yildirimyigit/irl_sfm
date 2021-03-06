@@ -21,6 +21,10 @@ class SFMController:
     self.last_cmd_vel = Twist()
     self.desired_speed = 0.5
     self.linear_max_speed = 0.9
+    self.lateral_max_speed = 0.9
+    
+    self.max_forward_vel = 2.5
+    self.max_lateral_vel = 2.0
 
     ###
 
@@ -165,8 +169,8 @@ class SFMController:
 
   def force_to_vel(self, force):
     vel = Twist()
-    vel.linear.x = force.x * self.linear_max_speed;
-    vel.linear.y = force.y * self.linear_max_speed;
+    vel.linear.x = max(min(force.x * self.linear_max_speed, self.max_forward_vel), -self.max_forward_vel)
+    vel.linear.y = max(min(force.y * self.lateral_max_speed, self.max_lateral_vel), -self.max_lateral_vel)
     # rospy.loginfo(vel)
     return vel
 
