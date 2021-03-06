@@ -104,7 +104,7 @@ class SFMController:
         (trans,rot) = self.tf_listener.lookupTransform('/base_link', '/odom', rospy.Time(0))
         tf_ready = True
       except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-      rospy.logerr('exception')
+        rospy.logerr('exception')
         pass
 
       if self.distance.x < self.x_thr and self.distance.y < self.y_thr:  # goal reached
