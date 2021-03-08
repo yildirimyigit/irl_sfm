@@ -20,7 +20,7 @@ except:
 
 
 class Conductor:
-    def __init__(self, cid):
+    def __init__(self, cid, node_name):
 
         self.num_max_tests = int(1e6)
 
@@ -32,6 +32,8 @@ class Conductor:
         self.client_id = cid
         self.scenario = rospy.get_param('/scenario')
         self.root_path = rospy.get_param('/recorder_root_path')
+        
+        self.node_name = node_name
 
         try:
             os.mkdir(self.root_path)
@@ -75,7 +77,8 @@ class Conductor:
 
         package = 'sfm_planner'
         sfm_executable, recorder_executable = 'sfm.py', 'recorder.py'
-        sfm_node, recorder_node = roslaunch.core.Node(package, sfm_executable), roslaunch.core.Node(package, recorder_executable)
+        sfm_node = roslaunch.core.Node(package, sfm_executable, namespace=self.node_name, output="screen")
+        recorder_node = roslaunch.core.Node(package, recorder_executable, namespace=self.node_name, output="screen")
 
         launch = roslaunch.scriptapi.ROSLaunch()
         launch.start()
@@ -83,10 +86,10 @@ class Conductor:
         for test_id in range(self.num_max_tests):
         #for test_id in range(3):
             source_x, goal_x, obs_x, obs_y = self.get_test_config()
-            rospy.set_param('/start/position/x', float(source_x))
-            rospy.set_param('/goal/position/x', float(goal_x))
-            rospy.set_param('/obstacle/position/x', float(obs_x))
-            rospy.set_param('/obstacle/position/y', float(obs_y))
+            rospy.set_param('start/position/x', float(source_x))
+            rospy.set_param('goal/position/x', float(goal_x))
+            rospy.set_param('obstacle/position/x', float(obs_x))
+            rospy.set_param('obstacle/position/y', float(obs_y))
         
             _, old_obs_pose = vrep.simxGetObjectPosition(self.client_id, obstacle_handle, -1, vrep.simx_opmode_oneshot)
             returnCode = vrep.simxSetObjectPosition(self.client_id, obstacle_handle, -1, (obs_x, obs_y, 2.0), vrep.simx_opmode_oneshot)
@@ -117,14 +120,17 @@ if __name__ == '__main__':
 
     if clientID != -1: # if we connected successfully
         print ('Connected to remote API server')
-    print('starting tests')
+    rospy.logwarn('starting tests')
     
     # ***
     
+    arg = rospy.myargv(argv=sys.argv)
+    
+    node_name = sys.argv[1]
+    
     rospy.init_node('test_conductor', anonymous=True)
-
-    c = Conductor(clientID)
+    c = Conductor(clientID, node_name)
     c.execute()
 
     vrep.simxFinish(-1)
-    print('finito')
+    rospy.logwarn('finito')

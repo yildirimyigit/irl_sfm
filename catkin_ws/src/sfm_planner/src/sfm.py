@@ -32,8 +32,8 @@ class SFMController:
     self.force_range = 0.25
     self.sum_radii = 0.43
 
-    self.starting_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/start/position/x', 0.0), rospy.get_param('/start/position/y', 0.0), 0), Quaternion(0, 0, rospy.get_param('/start/orientation/z', 0.706),rospy.get_param('/start/orientation/w', 0.707))))
-    self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 13.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
+    self.starting_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('start/position/x', 0.0), rospy.get_param('start/position/y', 0.0), 0), Quaternion(0, 0, rospy.get_param('start/orientation/z', 0.706),rospy.get_param('start/orientation/w', 0.707))))
+    self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('goal/position/x', 0.0), rospy.get_param('goal/position/y', 13.0), 0), Quaternion(0, 0, rospy.get_param('goal/orientation/z', 0.706),rospy.get_param('goal/orientation/w', 0.707))))
     self.last_repulsive_force, self.last_attractive_force = Vector3(), Vector3()
 
     self.distance = self.calculate_distance(self.starting_pose, self.goal_pose)
@@ -50,11 +50,11 @@ class SFMController:
     self.local_minima_angle_threshold = 0.001
     self.local_minima_magnitude_threshold = 4
 
-    self.laser_subs = rospy.Subscriber("/scan", LaserScan, self.laser_callback)
-    self.pose_subs = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
-    self.obs_0_pose_subs = rospy.Subscriber("/obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
-    self.vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
-    self.goal_reached_pub = rospy.Publisher("/sfm/goal_reached", Bool, queue_size=1)
+    self.laser_subs = rospy.Subscriber("scan", LaserScan, self.laser_callback)
+    self.pose_subs = rospy.Subscriber("robotPose", PoseStamped, self.pose_callback)
+    self.obs_0_pose_subs = rospy.Subscriber("obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
+    self.vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+    self.goal_reached_pub = rospy.Publisher("sfm/goal_reached", Bool, queue_size=1)
     self.tf_listener = tf.TransformListener()
 
   def laser_callback(self, msg):
@@ -100,11 +100,15 @@ class SFMController:
     while not rospy.is_shutdown():
       tf_ready = False
       vel = Twist()
+      ns = rospy.get_namespace()
+      #print('NAMESPACE: ' + ns)
+      
       try:
-        (trans,rot) = self.tf_listener.lookupTransform('/base_link', '/odom', rospy.Time(0))
+        (trans,rot) = self.tf_listener.lookupTransform(ns+'base_link', ns+'odom', rospy.Time(0))
         tf_ready = True
       except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
         rospy.logerr('exception')
+        rospy.sleep(0.5)
         pass
 
       if self.distance.x < self.x_thr and self.distance.y < self.y_thr:  # goal reached
@@ -183,3 +187,4 @@ if __name__ == '__main__':
 
   # after rospy.shotdown()
   # controller.vel_pub.publish(Twist())
+
