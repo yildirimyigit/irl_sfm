@@ -9,6 +9,8 @@ import rospy
 import roslaunch
 
 
+rospy.set_param('/use_sim_time', True)
+
 num_instances = 10
 sleep_duration = 10
 default_port_id = 19997  # starting from this number
