@@ -10,7 +10,7 @@
 
   <group ns="$(arg node_name)">
       <!--Run Test Conductor-->
-      <node name="test_conductor" pkg="sfm_planner" type="test_conductor.py" args="$(arg node_name) $(arg port)" output="screen" />
+      <node name="test_conductor" pkg="sfm_planner" type="test_conductor.py" args="$(arg node_name) $(arg port)" />
   </group>
 
 </launch>

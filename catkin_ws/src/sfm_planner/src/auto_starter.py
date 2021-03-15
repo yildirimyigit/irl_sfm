@@ -9,7 +9,7 @@ import rospy
 import roslaunch
 
 
-num_instances = 10
+num_instances = 4
 sleep_duration = 10
 default_port_id = 19997  # starting from this number
 pids = []
