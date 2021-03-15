@@ -45,7 +45,8 @@ for inst_num in range(num_instances):
     ########################################
 
     # + Running the simulator
-    pid = subprocess.Popen(["xvfb-run", "--auto-servernum", COPPELIA_ROOT_DIR+"/coppeliaSim.sh", "-h", WORLDS_DIR+"/small_corridor_obstacle_pose_publish.ttt", "-GROSInterface.nodeName="+str(node_name)])
+    with open(os.devnull, 'w') as fp:
+        pid = subprocess.Popen(["xvfb-run", "--auto-servernum", COPPELIA_ROOT_DIR+"/coppeliaSim.sh", "-h", WORLDS_DIR+"/small_corridor_obstacle_pose_publish.ttt", "-GROSInterface.nodeName="+str(node_name)], stdout=fp)
 
     pids.append(pid)
     time.sleep(sleep_duration)
