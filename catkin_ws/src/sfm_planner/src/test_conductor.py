@@ -115,20 +115,20 @@ class Conductor:
 
 
 if __name__ == '__main__':
+    # parsing node args
+    args = rospy.myargv(argv=sys.argv)
+    node_name = args[1]
+    port = int(args[2])
+    
     vrep.simxFinish(-1)
-    clientID = vrep.simxStart('127.0.0.1', 19997, True, True, 500, 5)
+    clientID = vrep.simxStart('127.0.0.1', port, True, True, 500, 5)
 
     if clientID != -1: # if we connected successfully
         print ('Connected to remote API server')
-    rospy.logwarn('starting tests')
-    
-    # ***
-    
-    arg = rospy.myargv(argv=sys.argv)
-    
-    node_name = sys.argv[1]
     
     rospy.init_node('test_conductor', anonymous=True)
+    rospy.logwarn('starting tests')
+    
     c = Conductor(clientID, node_name)
     c.execute()
 
