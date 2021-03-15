@@ -78,7 +78,8 @@ class Conductor:
         package = 'sfm_planner'
         sfm_executable, recorder_executable = 'sfm.py', 'recorder.py'
         sfm_node = roslaunch.core.Node(package, sfm_executable, namespace=self.node_name)
-        recorder_node = roslaunch.core.Node(package, recorder_executable, namespace=self.node_name, output="screen")
+#        recorder_node = roslaunch.core.Node(package, recorder_executable, namespace=self.node_name, output="screen")
+        recorder_node = roslaunch.core.Node(package, recorder_executable, namespace=self.node_name)
 
         launch = roslaunch.scriptapi.ROSLaunch()
         launch.start()

@@ -9,8 +9,8 @@ import rospy
 import roslaunch
 
 
-num_instances = 1
-sleep_duration = 6
+num_instances = 10
+sleep_duration = 10
 default_port_id = 19997  # starting from this number
 pids = []
 
@@ -47,6 +47,7 @@ for inst_num in range(num_instances):
     # + Running the simulator
     with open(os.devnull, 'w') as fp:  # discarding simulator's initialization messages
         pid = subprocess.Popen(["xvfb-run", "--auto-servernum", COPPELIA_ROOT_DIR+"/coppeliaSim.sh", "-h", WORLDS_DIR+"/small_corridor_obstacle_pose_publish.ttt", "-GROSInterface.nodeName="+str(node_name)], stdout=fp)
+#    pid = subprocess.Popen(["xvfb-run", "--auto-servernum", COPPELIA_ROOT_DIR+"/coppeliaSim.sh", "-h", WORLDS_DIR+"/small_corridor_obstacle_pose_publish.ttt", "-GROSInterface.nodeName="+str(node_name)])
 
     pids.append(pid)
     time.sleep(sleep_duration)
@@ -65,6 +66,7 @@ for inst_num in range(num_instances):
     parent = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
 
     parent.start()
+parent.spin()
 
     # - Running test conductor
 
