@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from sfm import SFMController
 from recorder import Recorder
@@ -32,7 +32,7 @@ class Conductor:
         self.client_id = cid
         self.scenario = rospy.get_param('/scenario')
         self.root_path = rospy.get_param('/recorder_root_path')
-        
+
         self.node_name = node_name
 
         try:
@@ -51,21 +51,21 @@ class Conductor:
         goal_x = np.round(np.random.uniform(self.goal[0], self.goal[1]), 2)
         obs_x = np.round(np.random.uniform(self.obs_x[0], self.obs_x[1]), 2)
         obs_y = np.round(np.random.uniform(self.obs_y[0], self.obs_y[1]), 2)
-        
+
         filename = str(source_x) + '_' + str(goal_x) + '_' + str(obs_x) + '_' + str(obs_y) + '.npy'
         save_path = self.root_path + self.scenario + '/' + filename
-        
+
         while os.path.isfile(save_path):  # if file exists, that config is used earlier
             source_x = np.round(np.random.uniform(self.source[0], self.source[1]), 2)
             goal_x = np.round(np.random.uniform(self.goal[0], self.goal[1]), 2)
             obs_x = np.round(np.random.uniform(self.obs_x[0], self.obs_x[1]), 2)
             obs_y = np.round(np.random.uniform(self.obs_y[0], self.obs_y[1]), 2)
-            
+
             filename = str(source_x) + '_' + str(goal_x) + '_' + str(obs_x) + '_' + str(obs_y) + '.npy'
             save_path = self.root_path + self.scenario + '/' + filename
 
         return source_x, goal_x, obs_x, obs_y
-        
+
 
     def execute(self):
         rospy.loginfo('executing...')
@@ -90,14 +90,14 @@ class Conductor:
             rospy.set_param('goal/position/x', float(goal_x))
             rospy.set_param('obstacle/position/x', float(obs_x))
             rospy.set_param('obstacle/position/y', float(obs_y))
-        
+
             _, old_obs_pose = vrep.simxGetObjectPosition(self.client_id, obstacle_handle, -1, vrep.simx_opmode_oneshot)
             returnCode = vrep.simxSetObjectPosition(self.client_id, obstacle_handle, -1, (obs_x, obs_y, 2.0), vrep.simx_opmode_oneshot)
             _, old_robotino_pose = vrep.simxGetObjectPosition(self.client_id, robotino_handle, -1, vrep.simx_opmode_oneshot)
             returnCode = vrep.simxSetObjectPosition(self.client_id, robotino_handle, -1, (source_x, 0, old_robotino_pose[2]), vrep.simx_opmode_oneshot)
             _, old_goal_pose = vrep.simxGetObjectPosition(self.client_id, goal_handle, -1, vrep.simx_opmode_oneshot)
             returnCode = vrep.simxSetObjectPosition(self.client_id, goal_handle, -1, (goal_x, 13, old_goal_pose[2]), vrep.simx_opmode_oneshot)
-            
+
             vrep.simxStartSimulation(self.client_id,vrep.simx_opmode_blocking)
             rospy.loginfo('test ' + str(test_id) + ' starting')
             rospy.loginfo('s: ' + str(source_x) + ' g: ' + str(goal_x) + ' obs: ' + str(obs_x) + '-' + str(obs_y))
@@ -119,16 +119,16 @@ if __name__ == '__main__':
     args = rospy.myargv(argv=sys.argv)
     node_name = args[1]
     port = int(args[2])
-    
+
     vrep.simxFinish(-1)
     clientID = vrep.simxStart('127.0.0.1', port, True, True, 500, 5)
 
     if clientID != -1: # if we connected successfully
         print ('Connected to remote API server')
-    
+
     rospy.init_node('test_conductor', anonymous=True)
     rospy.logwarn('starting tests')
-    
+
     c = Conductor(clientID, node_name)
     c.execute()
 
