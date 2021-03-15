@@ -9,8 +9,8 @@ import rospy
 import roslaunch
 
 
-num_instances = 2
-sleep_duration = 10
+num_instances = 1
+sleep_duration = 6
 default_port_id = 19997  # starting from this number
 pids = []
 
@@ -45,7 +45,7 @@ for inst_num in range(num_instances):
     ########################################
 
     # + Running the simulator
-    with open(os.devnull, 'w') as fp:
+    with open(os.devnull, 'w') as fp:  # discarding simulator's initialization messages
         pid = subprocess.Popen(["xvfb-run", "--auto-servernum", COPPELIA_ROOT_DIR+"/coppeliaSim.sh", "-h", WORLDS_DIR+"/small_corridor_obstacle_pose_publish.ttt", "-GROSInterface.nodeName="+str(node_name)], stdout=fp)
 
     pids.append(pid)
@@ -61,12 +61,12 @@ for inst_num in range(num_instances):
     cli_args = [f'{SFM_LAUNCHES_DIR}/ahtapot_test_conductor.launch', f'node_name:={node_name}', f'port:={str(port_id)}']
     roslaunch_args = cli_args[1:]
     roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], roslaunch_args)]
-    print(roslaunch_file)
 
     parent = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
 
     parent.start()
 
     # - Running test conductor
+
 
 
