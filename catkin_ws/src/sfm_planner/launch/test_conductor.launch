@@ -2,10 +2,15 @@
 
 <launch>
 
+  <arg name="node_name" />
+  <arg name="port" />
+
   <!--Load parameters-->
   <rosparam command="load" file="$(find sfm_planner)/config/test_conductor.yaml" />
 
-  <!--Run Test Conductor-->
-  <node name="test_conductor" pkg="sfm_planner" type="test_conductor.py" output="screen" />
+  <group ns="$(arg node_name)">
+      <!--Run Test Conductor-->
+      <node name="test_conductor" pkg="sfm_planner" type="test_conductor.py" args="$(arg node_name) $(arg port)" output="screen" />
+  </group>
 
 </launch>
