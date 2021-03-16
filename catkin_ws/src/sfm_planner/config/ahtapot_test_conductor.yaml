@@ -1,2 +1,2 @@
 recorder_root_path: '/home/yyildirim/workspace/data/demonstrations/sfm/'
-scenario: 'small_env_changing_s_g/headless'
+scenario: 'velo_small_env_changing_s_g/headless'

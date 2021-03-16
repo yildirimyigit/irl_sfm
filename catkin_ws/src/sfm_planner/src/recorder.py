@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped, Twist
 from std_msgs.msg import Bool
+from sensor_msgs.msg import PointCloud
 
 import numpy as np
 import time
@@ -19,6 +20,8 @@ class Recorder:
   
     self.demonstration = []  # [[d_g_x, d_g_y, d_o_x, d_o_y, vx, vy, x, y], ...]
     self.last_vel_x, self.last_vel_y = 0, 0
+    
+    self.last_velo_points = []
 
     self.is_saved = False
     
@@ -26,10 +29,14 @@ class Recorder:
 
     self.pose_subscriber = rospy.Subscriber("robotPose", PoseStamped, self.pose_callback)
     self.vel_subscriber = rospy.Subscriber("cmd_vel", Twist, self.vel_callback)
+    self.velo_subscriber = rospy.Subscriber("velodyne", PointCloud, self.velo_callback)
     self.goal_reached_subscriber = rospy.Subscriber("sfm/goal_reached", Bool, self.goal_reached_callback)
 
   def vel_callback(self, msg):
     self.last_vel_x, self.last_vel_y = msg.linear.x, msg.linear.y
+
+  def velo_callback(self, msg):
+    self.last_velo_points = msg.points
 
   def goal_reached_callback(self, msg):
     if msg.data:  # is True
@@ -47,7 +54,7 @@ class Recorder:
 
       vx, vy = self.last_vel_x, self.last_vel_y
 
-      state = np.array([d_g_x, d_g_y, d_o_x, d_o_y, vx, vy, pose_x, pose_y])
+      state = np.array([d_g_x, d_g_y, d_o_x, d_o_y, vx, vy, pose_x, pose_y, self.last_velo_points])
       self.demonstration.append(state)
 
   def save(self):
