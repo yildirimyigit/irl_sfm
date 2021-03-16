@@ -4,7 +4,7 @@ import rospy
 import tf
 import tf2_geometry_msgs
 from geometry_msgs.msg import Twist, Pose, Vector3, PoseStamped, Point, Quaternion, TransformStamped, Vector3Stamped
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import PointCloud
 from std_msgs.msg import Header, Bool
 
 import numpy as np
@@ -50,7 +50,7 @@ class SFMController:
     self.local_minima_angle_threshold = 0.001
     self.local_minima_magnitude_threshold = 4
 
-    self.laser_subs = rospy.Subscriber("scan", LaserScan, self.laser_callback)
+    self.laser_subs = rospy.Subscriber("velodyne", PointCloud, self.laser_callback)
     self.pose_subs = rospy.Subscriber("robotPose", PoseStamped, self.pose_callback)
     self.obs_0_pose_subs = rospy.Subscriber("obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
     self.vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
