@@ -23,6 +23,7 @@ def custom_loss(y_true, y_predicted):
 
 class OnlineCNMPRunner():
     def __init__(self):
+        self.node_name = "/sim0"
         model_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/small_env_changing_s_g/1607473236/cnmp_best_validation.h5'
         keras.losses.custom_loss = custom_loss
         self.model = load_model(f'{model_path}', custom_objects={'tf': tf})
@@ -32,17 +33,17 @@ class OnlineCNMPRunner():
         self.latent_shape = (1, 1, 128)
 
         #####################
-        self.pose_subs = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
+        self.pose_subs = rospy.Subscriber(self.node_name + "/robotPose", PoseStamped, self.pose_callback)
         
         self.nof_obstacles = rospy.get_param('/nof_obstacles', 10)
         self.obstacles_pose_subs = []
         self.obstacle_poses = []
         
         for i in range(self.nof_obstacles):
-            self.obstacles_pose_subs.append(rospy.Subscriber("/obstacle_" + str(i) + "_pose", PoseStamped, self.obs_pose_callback, (i)))
+            self.obstacles_pose_subs.append(rospy.Subscriber(self.node_name + "/obstacle_" + str(i) + "_pose", PoseStamped, self.obs_pose_callback, (i)))
             self.obstacle_poses.append(PoseStamped())
 
-        self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        self.pub = rospy.Publisher(self.node_name + '/cmd_vel', Twist, queue_size=1)
         self.state_pub = rospy.Publisher('/state_sub', Float32MultiArray, queue_size=1)
         #####################
 
@@ -114,20 +115,21 @@ class OnlineCNMPRunner():
             observation = self.observations[obstacle].reshape(1, 1, self.d_x+self.d_gamma+self.d_y)
                 
             target_X_Gamma = np.array([distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y]).reshape(1, 1, self.d_x+self.d_gamma)
+            
             # rospy.loginfo('***')
-            # rospy.loginfo(obstacle)
-            # rospy.loginfo(observation)
-            rospy.loginfo([observation, target_X_Gamma])
             predicted_Y, predicted_std = self.predict_model(observation, target_X_Gamma)
             
-            ll_prediction = self.latent_layer.predict([observation, target_X_Gamma]).reshape(self.latent_shape[2])
+            # ll_prediction = self.latent_layer.predict([observation, target_X_Gamma]).reshape(self.latent_shape[2])
+            # state = ll_prediction.tolist()
             
             # 6D state-action
             # state = [distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y, predicted_Y[0][0], predicted_Y[0][1]]
             # 4D state
             # state = [distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y]
             # <self.latent_shape[2]>D latent encoding
-            state = ll_prediction.tolist()
+            # 2D state
+            state = [distance_to_obs.x, distance_to_obs.y]
+            
             state_array = Float32MultiArray(data=state)
             self.state_pub.publish(state_array)
             

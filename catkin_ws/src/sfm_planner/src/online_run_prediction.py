@@ -25,7 +25,7 @@ def custom_loss(y_true, y_predicted):
 
 class OnlineCNMPRunner:
     def __init__(self):
-        self.root_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/small_env_changing_s_g/1607473236/'
+        self.root_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/continuous_poses_0/1614757977/'
         model_path = f'{self.root_path}cnmp_best_validation.h5'
         keras.losses.custom_loss = custom_loss
         self.model = load_model(f'{model_path}', custom_objects={'tf': tf})
@@ -33,10 +33,10 @@ class OnlineCNMPRunner:
         self.d_x, self.d_y, self.d_gamma = 2, 2, 2
 
         #####################
-        self.pose_subs = rospy.Subscriber("/robotPose", PoseStamped, self.pose_callback)
-        self.obs_0_pose_subs = rospy.Subscriber("/obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
-        self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
-        self.state_pub = rospy.Publisher('/state_sub', Float32MultiArray, queue_size=1)
+        self.pose_subs = rospy.Subscriber("/sim_0/robotPose", PoseStamped, self.pose_callback)
+        self.obs_0_pose_subs = rospy.Subscriber("/sim_0/obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
+        self.pub = rospy.Publisher('/sim_0/cmd_vel', Twist, queue_size=1)
+        self.state_pub = rospy.Publisher('/sim_0/state_sub', Float32MultiArray, queue_size=1)
         #####################
 
         self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 13.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
