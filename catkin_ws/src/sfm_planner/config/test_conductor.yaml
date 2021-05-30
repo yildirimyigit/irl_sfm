@@ -1,2 +1,4 @@
 recorder_root_path: '/home/yigit/Documents/projects/irl_sfm/data/demonstrations/sfm/'
-scenario: 'velo_small_env_changing_s_g/headless'
+scenario: 'continuous_poses_1/new'
+
+

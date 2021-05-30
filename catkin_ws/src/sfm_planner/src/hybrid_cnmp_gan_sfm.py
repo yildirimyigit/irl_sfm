@@ -14,6 +14,9 @@ from geometry_msgs.msg import Twist, Pose, Vector3, PoseStamped, Point, Vector3S
 from std_msgs.msg import Header, Float32MultiArray, Float32
 
 
+sfm_threshold = -10
+
+
 def custom_loss(y_true, y_predicted):
     mean, log_sigma = tf.split(y_predicted, 2, axis=-1)
     y_true_value, temp = tf.split(y_true, 2, axis=-1)
@@ -23,7 +26,7 @@ def custom_loss(y_true, y_predicted):
     return loss
 
 
-class OnlineCNMPRunner:
+class HybridCNMPSFMRunner:
     def __init__(self):
         self.root_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/small_env_changing_s_g/1607473236/'
         model_path = f'{self.root_path}cnmp_best_validation.h5'
@@ -53,7 +56,10 @@ class OnlineCNMPRunner:
         self.last_gan_output = 0.0
 
         self.goal_reached = False
-
+        
+        ###
+        
+        self.sfm_controller = SFMController()
 
     def predict_model(self, observation, target_X):  # observation and target_X contain gamma values too
         predicted_Y = np.zeros((1, self.d_y))
@@ -91,10 +97,10 @@ class OnlineCNMPRunner:
         while not rospy.is_shutdown():
             vel = Twist()
 
-            if self.last_gan_output < -10:  # TODO: implement this if correctly
-                vel.linear.x = 0
-                vel.linear.y = 1
+            if self.last_gan_output < sfm_threshold:  # TODO: implement this if correctly
+                self.sfm_controller.execute(publish=True)
             else:
+                self.sfm_controller.execute(publish=False)
                 distance_to_goal = self.calculate_distance(self.last_pose, self.goal_pose)  # X
                 distance_to_obs = self.calculate_distance(self.last_pose, self.obstacle_pose)  # Gamma
 
@@ -107,8 +113,9 @@ class OnlineCNMPRunner:
                 vel.linear.y = predicted_Y[0][1]
             self.pub.publish(vel)
 
+            # GAN with 8D state
             # state = [distance_to_goal.x, distance_to_goal.y, distance_to_obs.x, distance_to_obs.y, predicted_Y[0][0], predicted_Y[0][1], self.last_pose.pose.position.x, self.last_pose.pose.position.y]
-            # 2D state
+            # GAN with 2D state
             state = [distance_to_obs.x, distance_to_obs.y]
             self.states.append(np.array(state))
             state_array = Float32MultiArray(data=state)
@@ -132,6 +139,6 @@ class OnlineCNMPRunner:
 
 if __name__ == '__main__':
     rospy.init_node('online_sfm_control_with_cnmp')
-    ocr = OnlineCNMPRunner()
-    ocr.execute()
-    ocr.save_states()
+    hcsr = HybridCNMPSFMRunner()
+    hcsr.execute()
+    hcsr.save_states()

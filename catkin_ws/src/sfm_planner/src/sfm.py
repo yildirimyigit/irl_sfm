@@ -1,21 +1,18 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import rospy
 import tf
-import tf2_geometry_msgs
+#import tf2_geometry_msgs
 from geometry_msgs.msg import Twist, Pose, Vector3, PoseStamped, Point, Quaternion, TransformStamped, Vector3Stamped
-from sensor_msgs.msg import PointCloud
+from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Header, Bool
 
 import numpy as np
 
 
-MULT = 10
-
-
 class SFMController:
   def __init__(self):
-    self.x_thr, self.y_thr = 0.3, 0.3
+    self.x_thr, self.y_thr = 0.2, 0.2
     ###################
     self.relaxation_time = 1.0
     self.last_cmd_vel = Twist()
@@ -31,6 +28,10 @@ class SFMController:
     self.force_strength = 100
     self.force_range = 0.25
     self.sum_radii = 0.43
+    
+    ###
+    
+    self.MULT = 10
 
     self.starting_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('start/position/x', 0.0), rospy.get_param('start/position/y', 0.0), 0), Quaternion(0, 0, rospy.get_param('start/orientation/z', 0.706),rospy.get_param('start/orientation/w', 0.707))))
     self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('goal/position/x', 0.0), rospy.get_param('goal/position/y', 13.0), 0), Quaternion(0, 0, rospy.get_param('goal/orientation/z', 0.706),rospy.get_param('goal/orientation/w', 0.707))))
@@ -50,7 +51,7 @@ class SFMController:
     self.local_minima_angle_threshold = 0.001
     self.local_minima_magnitude_threshold = 4
 
-    self.laser_subs = rospy.Subscriber("velodyne", PointCloud, self.laser_callback)
+    self.laser_subs = rospy.Subscriber("scan", LaserScan, self.laser_callback)
     self.pose_subs = rospy.Subscriber("robotPose", PoseStamped, self.pose_callback)
     self.obs_0_pose_subs = rospy.Subscriber("obstacle_0_pose", PoseStamped, self.obs_0_pose_callback)
     self.vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
@@ -96,8 +97,8 @@ class SFMController:
     distance.y = p1.pose.position.y - p0.pose.position.y
     return distance
 
-  def execute(self):
-    while not rospy.is_shutdown():
+  def execute(self, publish=True):
+    while not rospy.is_shutdown() and publish:
       tf_ready = False
       vel = Twist()
       ns = rospy.get_namespace()
@@ -133,8 +134,8 @@ class SFMController:
         # Calculated cmd_vel is in global frame. Transforming to base_link
         if tf_ready:
           v = Vector3()
-          v.x = self.last_cmd_vel.linear.x * MULT
-          v.y = self.last_cmd_vel.linear.y * MULT
+          v.x = self.last_cmd_vel.linear.x * self.MULT
+          v.y = self.last_cmd_vel.linear.y * self.MULT
 
           # based on https://answers.ros.org/question/196149/how-to-rotate-vector-by-quaternion-in-python/?answer=196155#post-id-196155
           # rotate v by rot

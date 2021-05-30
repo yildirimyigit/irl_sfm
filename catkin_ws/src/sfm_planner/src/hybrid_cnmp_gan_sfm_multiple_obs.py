@@ -11,6 +11,8 @@ import rospy
 from geometry_msgs.msg import Twist, Pose, Vector3, PoseStamped, Point, Vector3Stamped, Quaternion
 from std_msgs.msg import Header, Float32MultiArray, Float32
 
+from sfm import SFMController
+
 
 def custom_loss(y_true, y_predicted):
     mean, log_sigma = tf.split(y_predicted, 2, axis=-1)
@@ -21,7 +23,7 @@ def custom_loss(y_true, y_predicted):
     return loss
 
 
-class OnlineCNMPRunner():
+class HybridCNMPSFMRunner():
     def __init__(self):
         self.node_name = "/sim_0"
         model_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/small_env_changing_s_g/1607473236/cnmp_best_validation.h5'
@@ -55,6 +57,11 @@ class OnlineCNMPRunner():
         
         self.observations = np.zeros((self.nof_obstacles, 1, self.d_x+self.d_gamma+self.d_y))
         self.last_gan_output = 0.0
+        
+        ###
+
+        self.sfm_threshold = -0.5
+        self.sfm_controller = SFMController()
 
     def predict_model(self, observation, target_X):  # observation and target_X contain gamma values too
         predicted_Y = np.zeros((1, self.d_y))
@@ -143,17 +150,17 @@ class OnlineCNMPRunner():
             if obstacle != -1:
                 last_passed = obstacle
 
-                if self.last_gan_output <= -0.5:  # TODO: implement this if correctly
-                    vel.linear.x = 0
-                    vel.linear.y = 1
+                if self.last_gan_output <= self.sfm_threshold:
+                    self.sfm_controller.execute(publish=True)
                 else:
+                    self.sfm_controller.execute(publish=False)
                     vel.linear.x = predicted_Y[0][0]
                     vel.linear.y = predicted_Y[0][1]
-                self.pub.publish(vel)
+                    self.pub.publish(vel)
             rate.sleep()
 
 
 if __name__ == '__main__':
     rospy.init_node('online_sfm_control_with_cnmp')
-    ocr = OnlineCNMPRunner()
-    ocr.execute()
+    hcsr = HybridCNMPSFMRunner()
+    hcsr.execute()

@@ -8,7 +8,7 @@ except:
     print('BOOM')
 
 
-vel = -0.35  # m/s
+vel = -0.7  # m/s
 x_pose = 1.0
 y_pose_start, y_pose_limit = 9.5, 2.5
 
