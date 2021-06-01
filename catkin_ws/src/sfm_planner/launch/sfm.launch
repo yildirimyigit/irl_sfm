@@ -1,9 +1,13 @@
 <launch>
 
+  <arg name="node_name" default="sim_0"/>
+
   <!--Load parameters-->
   <rosparam command="load" file="$(find sfm_planner)/config/sfm.yaml" />
 
   <!--Run SFM-->
-  <node name="sfm_controller" pkg="sfm_planner" type="sfm.py" output="screen" />
+  <group ns="$(arg node_name)">
+    <node name="sfm_controller" pkg="sfm_planner" type="sfm.py" output="screen" />
+  </group>
 
 </launch>

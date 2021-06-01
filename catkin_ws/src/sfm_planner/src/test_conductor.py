@@ -14,14 +14,13 @@ import rospy
 import roslaunch
 
 try:
-    import vrep
+    import sim
 except:
     print('BOOM')
 
 
 class Conductor:
     def __init__(self, cid, node_name):
-
         self.num_max_tests = int(1e6)
 
         self.source = [-3, 3]
@@ -68,12 +67,11 @@ class Conductor:
 
         return source_x, goal_x, obs_x, obs_y
 
-
     def execute(self):
         rospy.loginfo('executing...')
-        res, obstacle_handle = vrep.simxGetObjectHandle(self.client_id,'obstacle',vrep.simx_opmode_oneshot_wait)
-        res, robotino_handle = vrep.simxGetObjectHandle(self.client_id,'robotino',vrep.simx_opmode_oneshot_wait)
-        res, goal_handle = vrep.simxGetObjectHandle(self.client_id,'GOAL',vrep.simx_opmode_oneshot_wait)
+        res, obstacle_handle = sim.simxGetObjectHandle(self.client_id, 'obstacle', sim.simx_opmode_oneshot_wait)
+        res, robotino_handle = sim.simxGetObjectHandle(self.client_id, 'robotino', sim.simx_opmode_oneshot_wait)
+        res, goal_handle = sim.simxGetObjectHandle(self.client_id, 'GOAL', sim.simx_opmode_oneshot_wait)
 
         # rate = rospy.Rate(20)  # hz
 
@@ -94,14 +92,14 @@ class Conductor:
             rospy.set_param('obstacle/position/x', float(obs_x))
             rospy.set_param('obstacle/position/y', float(obs_y))
 
-            _, old_obs_pose = vrep.simxGetObjectPosition(self.client_id, obstacle_handle, -1, vrep.simx_opmode_oneshot)
-            returnCode = vrep.simxSetObjectPosition(self.client_id, obstacle_handle, -1, (obs_x, obs_y, 2.0), vrep.simx_opmode_oneshot)
-            _, old_robotino_pose = vrep.simxGetObjectPosition(self.client_id, robotino_handle, -1, vrep.simx_opmode_oneshot)
-            returnCode = vrep.simxSetObjectPosition(self.client_id, robotino_handle, -1, (source_x, 0, old_robotino_pose[2]), vrep.simx_opmode_oneshot)
-            _, old_goal_pose = vrep.simxGetObjectPosition(self.client_id, goal_handle, -1, vrep.simx_opmode_oneshot)
-            returnCode = vrep.simxSetObjectPosition(self.client_id, goal_handle, -1, (goal_x, 13, old_goal_pose[2]), vrep.simx_opmode_oneshot)
+            _, old_obs_pose = sim.simxGetObjectPosition(self.client_id, obstacle_handle, -1, sim.simx_opmode_oneshot)
+            returnCode = sim.simxSetObjectPosition(self.client_id, obstacle_handle, -1, [obs_x, obs_y, 2.0], sim.simx_opmode_oneshot)
+            _, old_robotino_pose = sim.simxGetObjectPosition(self.client_id, robotino_handle, -1, sim.simx_opmode_oneshot)
+            returnCode = sim.simxSetObjectPosition(self.client_id, robotino_handle, -1, [source_x, 0, old_robotino_pose[2]], sim.simx_opmode_oneshot)
+            _, old_goal_pose = sim.simxGetObjectPosition(self.client_id, goal_handle, -1, sim.simx_opmode_oneshot)
+            returnCode = sim.simxSetObjectPosition(self.client_id, goal_handle, -1, [goal_x, 13, old_goal_pose[2]], sim.simx_opmode_oneshot)
 
-            vrep.simxStartSimulation(self.client_id,vrep.simx_opmode_blocking)
+            sim.simxStartSimulation(self.client_id, sim.simx_opmode_blocking)
             rospy.loginfo('test ' + str(test_id) + ' starting')
             rospy.loginfo('s: ' + str(source_x) + ' g: ' + str(goal_x) + ' obs: ' + str(obs_x) + '-' + str(obs_y))
             launch.launch(recorder_node)
@@ -113,7 +111,7 @@ class Conductor:
             while process.is_alive():
                 continue
 
-            vrep.simxStopSimulation(self.client_id, vrep.simx_opmode_blocking)
+            sim.simxStopSimulation(self.client_id, sim.simx_opmode_blocking)
             time.sleep(0.5)
 
 
@@ -123,11 +121,14 @@ if __name__ == '__main__':
     node_name = args[1]
     port = int(args[2])
 
-    vrep.simxFinish(-1)
-    clientID = vrep.simxStart('127.0.0.1', port, True, True, 500, 5)
+    sim.simxFinish(-1)
+    clientID = sim.simxStart('127.0.0.1', port, True, True, 500, 5)
 
-    if clientID != -1: # if we connected successfully
-        print ('Connected to remote API server')
+    if clientID != -1:  # if we connected successfully
+        rospy.logwarn('Connected to remote API server')
+        # res, objs = sim.simxGetObjects(clientID, sim.sim_handle_all, sim.simx_opmode_blocking)
+        # rospy.logerr(objs)
+        # time.sleep(10)
 
     rospy.init_node('test_conductor', anonymous=True)
     rospy.logwarn('starting tests')
@@ -135,6 +136,6 @@ if __name__ == '__main__':
     c = Conductor(clientID, node_name)
     c.execute()
 
-    vrep.simxFinish(-1)
+    sim.simxFinish(-1)
     rospy.logwarn('finito')
 
