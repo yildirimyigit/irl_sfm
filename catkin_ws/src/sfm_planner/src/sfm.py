@@ -3,7 +3,7 @@
 import rospy
 import tf
 # import tf2_geometry_msgs
-from geometry_msgs.msg import Twist, Pose, Vector3, PoseStamped, Point, Quaternion, TransformStamped, Vector3Stamped
+from geometry_msgs.msg import Twist, Pose, Vector3, PoseStamped, Point, Quaternion
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Header, Bool
 
@@ -15,7 +15,7 @@ class SFMController:
         self.x_thr, self.y_thr = 0.2, 0.2
         ###################
         self.relaxation_time = 1.0
-        self.last_cmd_vel = Twist()
+        self.last_cmd_vel, self.last_published_cmd_vel = Twist(), Twist()
         self.desired_speed = 0.5
         self.linear_max_speed = 0.9
         self.lateral_max_speed = 0.9
@@ -26,6 +26,16 @@ class SFMController:
         ###
 
         self.MULT = 10
+
+        ###
+
+        # PID vars
+        self.vel_x_error, self.vel_y_error = 0, 0
+        self.last_vel_x_error, self.last_vel_y_error = 0, 0
+        self.sum_vel_x_error, self.sum_vel_y_error = 0, 0
+
+        # PID constants
+        self.kp, self.kd, self.ki = 0.015, 0.02, 0.0015  # 0.05, 0.000125
 
         ###
 
@@ -157,11 +167,16 @@ class SFMController:
                     magnitude_v = self.calculate_magnitude(v)
 
                     vel = Twist()
+                    vel.linear.x = rot_v[0] * magnitude_v
+                    vel.linear.y = rot_v[1] * magnitude_v
 
-                    vel.linear.x = max(min(rot_v[0] * magnitude_v, self.max_forward_vel), -self.max_forward_vel)
-                    vel.linear.y = max(min(rot_v[1] * magnitude_v, self.max_lateral_vel), -self.max_lateral_vel)
+                    vel = self.pid_control(vel)
+
+                    # vel.linear.x = max(min(rot_v[0] * magnitude_v, self.max_forward_vel), -self.max_forward_vel)
+                    # vel.linear.y = max(min(rot_v[1] * magnitude_v, self.max_lateral_vel), -self.max_lateral_vel)
 
             self.vel_pub.publish(vel)
+            self.last_published_cmd_vel = vel
 
             self.goal_reached_pub.publish(self.goal_reached)
 
@@ -170,8 +185,24 @@ class SFMController:
                 # return True
             # return False
 
-    def pid_control(self, vel):
-        a = vel
+    def pid_control(self, ref_vel):
+        self.vel_x_error = ref_vel.linear.x - self.last_published_cmd_vel.linear.x
+        self.vel_y_error = ref_vel.linear.y - self.last_published_cmd_vel.linear.y
+
+        der_x_error = self.vel_x_error - self.last_vel_x_error
+        der_y_error = self.vel_y_error - self.last_vel_y_error
+
+        self.sum_vel_x_error += self.vel_x_error
+        self.sum_vel_y_error += self.vel_y_error
+
+        vel = Twist()
+        vel.linear.x = self.kp * self.vel_x_error + self.kd * der_x_error + self.ki * self.sum_vel_x_error
+        vel.linear.y = self.kp * self.vel_y_error + self.kd * der_y_error + self.ki * self.sum_vel_y_error
+
+        self.last_vel_x_error = self.vel_x_error
+        self.last_vel_y_error = self.vel_y_error
+
+        return vel
 
     def normalize(self, vec3):
         vec_len = self.calculate_magnitude(vec3)
