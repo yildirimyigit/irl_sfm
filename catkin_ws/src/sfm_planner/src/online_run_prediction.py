@@ -1,9 +1,9 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python
 
-from keras.models import Model, load_model
-import keras.losses
+from tensorflow.keras.models import Model, load_model
 import tensorflow as tf
 import tensorflow_probability as tfp
+import tensorflow.keras.losses
 
 import numpy as np
 import time
@@ -25,9 +25,11 @@ def custom_loss(y_true, y_predicted):
 
 class OnlineCNMPRunner:
     def __init__(self):
-        self.root_path = f'/home/yigit/phd/yigit_phd_thesis/cnmp/output/sfm/small_env_changing_s_g/1607473236/'
+        self.root_path = f'/home/yigit/Documents/projects/cnmp/output/sfm/continuous_poses_1/new/combined_1/1623533926/'
+        
         model_path = f'{self.root_path}cnmp_best_validation.h5'
         #keras.losses.custom_loss = custom_loss
+        tensorflow.keras.losses.custom_loss = custom_loss
         self.model = load_model(f'{model_path}', custom_objects={'tf': tf, 'custom_loss': custom_loss})
 
         self.d_x, self.d_y, self.d_gamma = 2, 2, 2
@@ -40,7 +42,7 @@ class OnlineCNMPRunner:
         self.gan_sub = rospy.Subscriber('/gan_output', Float32, self.gan_callback)
         #####################
 
-        self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 0.0), rospy.get_param('/goal/position/y', 13.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
+        self.goal_pose = PoseStamped(Header(0, 0, 'odom'), Pose(Point(rospy.get_param('/goal/position/x', 2.530), rospy.get_param('/goal/position/y', 13.0), 0), Quaternion(0, 0, rospy.get_param('/goal/orientation/z', 0.706),rospy.get_param('/goal/orientation/w', 0.707))))
 
         self.last_pose = PoseStamped()
         self.obstacle_pose = PoseStamped()

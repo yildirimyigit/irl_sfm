@@ -1,4 +1,4 @@
-recorder_root_path: '/home/patika/Documents/projects/irl_sfm/data/demonstrations/sfm/'
+recorder_root_path: '/home/yigit/Documents/projects/irl_sfm/data/demonstrations/sfm/'
 scenario: 'continuous_poses_1/new'
 
 
